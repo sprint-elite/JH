@@ -1,0 +1,16 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: jh-custom-db
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: jh
+      POSTGRES_PASSWORD: jh_dev_password
+      POSTGRES_DB: jh_custom
+    volumes:
+      - jh_pg_data:/var/lib/postgresql/data
+
+volumes:
+  jh_pg_data:
