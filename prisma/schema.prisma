@@ -1,4 +1,4 @@
-// Prisma schema — 커스텀 굿즈 쇼핑몰 (JH MAKER)
+// Prisma schema — 커스텀 단체티 쇼핑몰 (대지나염)
 // 적용: npm run db:push && npm run db:seed
 
 generator client {
@@ -45,6 +45,7 @@ enum BannerPlacement {
   HOME_PROMO // 메인 프로모션 띠
   HOME_IDEA // 홈 아이디어 카드
   HOME_GUIDE // 홈 가이드 카드
+  HOME_CIRCLE // 메인 원형 상품 줄
 }
 
 enum CollectionType {

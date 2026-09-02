@@ -1,15 +1,9 @@
 import { NextResponse } from "next/server";
+import { BANNER_PLACEMENT_VALUES } from "@/lib/banner-placements";
 import type { BannerPlacement } from "@prisma/client";
 import { requireAdmin } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { handleApiError, jsonError } from "@/lib/api-utils";
-
-const PLACEMENTS = new Set([
-  "HOME_HERO",
-  "HOME_PROMO",
-  "HOME_IDEA",
-  "HOME_GUIDE",
-]);
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -31,7 +25,7 @@ export async function PUT(request: Request, context: Ctx) {
     const existing = await prisma.banner.findUnique({ where: { id } });
     if (!existing) return jsonError("배너를 찾을 수 없습니다.", 404);
 
-    if (body.placement && !PLACEMENTS.has(body.placement)) {
+    if (body.placement && !BANNER_PLACEMENT_VALUES.has(body.placement)) {
       return jsonError("배치 위치가 올바르지 않습니다.", 400);
     }
 

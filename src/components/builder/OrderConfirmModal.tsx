@@ -17,10 +17,6 @@ import {
 } from "@/lib/order-shipping";
 import {
   BAG_COLOR_LABELS,
-  BAG_SHAPE_LABELS,
-  CLOSURE_LABELS,
-  HANDLE_LABELS,
-  POCKET_LABELS,
   PRINT_SIDE_LABELS,
   SIZE_LABELS,
 } from "@/types/builder";
@@ -145,27 +141,9 @@ export function OrderConfirmModal({
           <div className="space-y-2 rounded-lg bg-zinc-50 px-4 py-3 text-sm">
             <SummaryRow label="사이즈" value={SIZE_LABELS[data.options.size]} />
             <SummaryRow
-              label="본체 색상"
+              label="색상"
               value={BAG_COLOR_LABELS[data.options.bagColor]}
             />
-            {data.options.productType === "ecobag" && (
-              <>
-                <SummaryRow
-                  label="손잡이 끈 색상"
-                  value={BAG_COLOR_LABELS[data.options.handleStrapColor]}
-                />
-                <SummaryRow
-                  label="단추"
-                  value={CLOSURE_LABELS[data.options.closureType]}
-                />
-                <SummaryRow
-                  label="에코백 형태"
-                  value={BAG_SHAPE_LABELS[data.options.bagShape]}
-                />
-              </>
-            )}
-            <SummaryRow label="손잡이" value={HANDLE_LABELS[data.options.handle]} />
-            <SummaryRow label="포켓" value={POCKET_LABELS[data.options.pocket]} />
             <SummaryRow
               label="인쇄면"
               value={PRINT_SIDE_LABELS[data.options.printSide]}

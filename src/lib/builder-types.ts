@@ -1,9 +1,9 @@
 import type { ProductType } from "@/types/builder";
 
 export const BUILDER_TYPES: { value: ProductType; label: string }[] = [
-  { value: "ecobag", label: "에코백 빌더" },
-  { value: "shopping-bag", label: "장바구니 빌더" },
-  { value: "pouch", label: "파우치 빌더" },
+  { value: "ecobag", label: "반팔티 빌더" },
+  { value: "shopping-bag", label: "카라티 빌더" },
+  { value: "pouch", label: "후드/집업 빌더" },
 ];
 
 export const BUILDER_TYPE_SET = new Set<string>(

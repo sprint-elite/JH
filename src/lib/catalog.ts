@@ -6,11 +6,12 @@ import {
   fetchProductMockupFaces,
   type ProductMockupFaceDto,
 } from "@/lib/product-mockup";
-import type { ProductType } from "@/types/builder";
+import { SIZE_LABELS, type ProductType, type SizeOption } from "@/types/builder";
 import { SLUG_TO_PRODUCT_TYPE } from "@/lib/home-data";
 import { isBuilderType } from "@/lib/builder-types";
 import { parseNoticeJson } from "@/lib/inventory";
 import { fetchHomeContentCards } from "@/lib/content-article";
+import { BAG_COLOR_PRESETS } from "@/lib/fabric/bag-colors";
 
 export type CatalogProductDto = {
   id: string;
@@ -28,6 +29,9 @@ export type CatalogProductDto = {
   categorySlug: string | null;
   bulkLabel: string | null;
   badge: string | null;
+  colors: string[];
+  sizeRange: string | null;
+  groupPrice: number | null;
 };
 
 export type HomeBannerDto = {
@@ -78,6 +82,7 @@ export type HomeContentCardDto = {
 
 export type HomeCatalogDto = {
   banners: HomeBannerDto[];
+  circleNav: HomeBannerDto[];
   ideas: HomeContentCardDto[];
   guides: HomeContentCardDto[];
   best: CatalogProductDto[];
@@ -141,12 +146,36 @@ export function toCatalogProduct(
     reviewCount: number;
     builderType?: string;
     saleType?: ProductSaleType;
+    optionSchema?: unknown;
     category?: { slug: string } | null;
-    quantityDiscounts?: { label: string | null; minQuantity: number }[];
+    quantityDiscounts?: {
+      label: string | null;
+      minQuantity: number;
+      unitPrice?: number | null;
+      discountRate?: number | null;
+    }[];
   },
   badge?: string | null,
 ): CatalogProductDto {
   const bulk = p.quantityDiscounts?.[0]?.label ?? null;
+  const schema = parseProductOptionSchema(p.optionSchema);
+  const colors = (schema?.colors ?? [])
+    .map((id) => BAG_COLOR_PRESETS.find((c) => c.id === id)?.hex)
+    .filter((hex): hex is string => Boolean(hex));
+  const sizes = schema?.sizes ?? [];
+  const sizeRange =
+    sizes.length >= 2
+      ? `${SIZE_LABELS[sizes[0] as SizeOption] ?? sizes[0]} ~ ${SIZE_LABELS[sizes[sizes.length - 1] as SizeOption] ?? sizes[sizes.length - 1]}`
+      : sizes.length === 1
+        ? (SIZE_LABELS[sizes[0] as SizeOption] ?? sizes[0])
+        : "S (90) ~ L (100)";
+  const deal = p.quantityDiscounts?.[0];
+  let groupPrice: number | null = null;
+  if (deal?.unitPrice != null && deal.unitPrice < p.basePrice) {
+    groupPrice = deal.unitPrice;
+  } else if (deal?.discountRate && deal.discountRate > 0) {
+    groupPrice = Math.round(p.basePrice * (1 - deal.discountRate));
+  }
   return {
     id: p.id,
     slug: p.slug,
@@ -163,6 +192,9 @@ export function toCatalogProduct(
     categorySlug: p.category?.slug ?? null,
     bulkLabel: bulk,
     badge: badge ?? (p.isNew ? "NEW" : p.isFeatured ? "BEST" : null),
+    colors,
+    sizeRange,
+    groupPrice,
   };
 }
 
@@ -171,7 +203,7 @@ const productInclude = {
   quantityDiscounts: {
     orderBy: { minQuantity: "asc" as const },
     take: 1,
-    select: { label: true, minQuantity: true },
+    select: { label: true, minQuantity: true, unitPrice: true, discountRate: true },
   },
 };
 
@@ -254,6 +286,7 @@ export async function fetchProductList(options?: {
 export async function fetchHomeCatalog(): Promise<HomeCatalogDto> {
   const [
     bannerRows,
+    circleRows,
     ideaCards,
     guideCards,
     best,
@@ -265,6 +298,10 @@ export async function fetchHomeCatalog(): Promise<HomeCatalogDto> {
   ] = await Promise.all([
     prisma.banner.findMany({
       where: { placement: "HOME_HERO", isActive: true },
+      orderBy: { sortOrder: "asc" },
+    }),
+    prisma.banner.findMany({
+      where: { placement: "HOME_CIRCLE", isActive: true },
       orderBy: { sortOrder: "asc" },
     }),
     fetchHomeContentCards("IDEA"),
@@ -358,11 +395,28 @@ export async function fetchHomeCatalog(): Promise<HomeCatalogDto> {
     };
   });
 
+  const bestResolved = best.length
+    ? best
+    : await fallbackProducts({ isFeatured: true });
+
+  const circleNav: HomeBannerDto[] = circleRows.length
+    ? circleRows.map(toBannerDto)
+    : bestResolved.slice(0, 8).map((p) => ({
+        id: p.id,
+        tag: null,
+        title: p.name,
+        subtitle: null,
+        linkUrl: `/products/${p.slug}`,
+        imageUrl: p.thumbnailUrl,
+        productSlug: p.slug,
+      }));
+
   return {
     banners,
+    circleNav,
     ideas,
     guides,
-    best: best.length ? best : await fallbackProducts({ isFeatured: true }),
+    best: bestResolved,
     newArrivals: newArrivals.length
       ? newArrivals
       : await fallbackProducts({ isNew: true }),
@@ -416,6 +470,7 @@ export type ProductDetailDto = {
   ratingAvg: number;
   reviewCount: number;
   categoryName: string | null;
+  categorySlug: string | null;
   productType: ProductType;
   saleType: ProductSaleType;
   bulkLabel: string | null;
@@ -438,7 +493,7 @@ export async function fetchProductDetailBySlug(
   const product = await prisma.product.findFirst({
     where: { slug, isActive: true },
     include: {
-      category: { select: { name: true } },
+      category: { select: { name: true, slug: true } },
       quantityDiscounts: { orderBy: { minQuantity: "asc" } },
       detailSections: {
         where: { isActive: true },
@@ -488,6 +543,7 @@ export async function fetchProductDetailBySlug(
     ratingAvg: product.ratingAvg,
     reviewCount: product.reviewCount,
     categoryName: product.category?.name ?? null,
+    categorySlug: product.category?.slug ?? null,
     productType: resolveProductType(product.builderType, product.slug),
     saleType: product.saleType,
     bulkLabel,

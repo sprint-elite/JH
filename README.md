@@ -1,112 +1,109 @@
-# JH MAKER
+# 단체복 전용 쇼핑몰
 
-커스텀 굿즈 쇼핑몰 · **v1.0**
+**대지나염 — 단체티·유니폼 나염 커스텀 플랫폼 (개발중)**
 
-Next.js 16 기반의 커스텀/기성품 통합 쇼핑몰입니다. Fabric.js 빌더로 에코백·파우치 등을 직접 디자인해 주문할 수 있고, 기성품은 장바구니·위시리스트·리뷰 흐름을 지원합니다.
+동아리, 기업, 행사, 매장 유니폼까지. 로고와 문구만 올리면 시안부터 나염 주문까지 이어지는 단체복 전용 커머스입니다. 범용 굿즈몰이 아니라 **반팔티·카라티·후드·맨투맨** 제작 흐름에 맞춰 카탈로그, 빌더, 운영 백오피스를 한 제품으로 묶었습니다.
+
+> 현재 핵심 흐름(홈 → 상품 → 빌더 → 주문 → 관리자)은 동작합니다. 결제 실연동·알림·클라우드 업로드 등 운영 마무리는 진행 중입니다.
+
+---
+
+## 왜 만들었나
+
+단체티 주문은 “상품을 고르고, 시안을 맞추고, 수량을 넣고, 제작 상태를 추적”하는 일이 한 번에 이뤄져야 합니다. 이 프로젝트는 그 과정을 쇼핑몰 UX로 재구성했습니다.
+
+- **고객**은 카테고리에서 옷을 고르고, 캔버스에 로고·텍스트를 올려 바로 주문합니다.
+- **운영자**는 배너·원형 메뉴·아이디어 카드·상품 목업을 관리자에서 바꾸고, 주문을 상태값으로 처리합니다.
+
+---
 
 ## 주요 기능
 
-### 고객
-- 홈 · 카탈로그 · 상품 상세(PDP)
-- 커스텀 빌더(Fabric.js) / 기성품 BUY NOW · 장바구니 · 위시리스트
-- 회원가입 · 로그인 · 카카오/구글 OAuth
-- 마이페이지(주문, 배송지, 쿠폰, 반품, 위시리스트)
-- 2분컷 템플릿 · 제작 가이드 · 상황별 아이디어 콘텐츠
-- 1:1 문의 · FAQ · 이용약관 · 개인정보처리방침
+### 스토어프론트
+- 히어로 캐러셀, 원형 상품 메뉴, 2분컷 템플릿, 테마별 베스트, 상황별 아이디어 8종
+- 카테고리 목록(반팔티 / 카라티 / 기능성 / 후드 등)과 상품 상세
+- **Fabric.js 커스텀 빌더** — 앞·뒷면 목업, 인쇄 영역, 이미지·텍스트 편집, 색상·사이즈
+- 기성품 바로 구매 · 장바구니 · 위시리스트
+- 회원(이메일) 및 카카오/구글 로그인, 마이페이지(주문·배송지·쿠폰·반품)
 
 ### 관리자 (`/admin`)
-- 대시보드 · 상품(목업/상세/재고) · 주문 · 회원
-- 카테고리 · 컬렉션 · 배너 · 쿠폰 · 리뷰
-- 교환/반품 · 1:1 문의 · 소개글 CMS · 리포트 · 사이트 설정
+- 대시보드, 주문·교환반품, 매출 리포트
+- 카테고리 · 상품(목업 면 편집) · 컬렉션
+- 배너(히어로 / **원형 메뉴** / 아이디어 / 가이드)
+- 소개글 CMS · 쿠폰 · 리뷰 · 문의 · 계정 · 사이트 설정
+
+---
 
 ## 기술 스택
 
-| 영역 | 기술 |
+| 영역 | 선택 |
 |------|------|
-| Framework | Next.js 16 (App Router) |
-| Language | TypeScript |
-| DB | MySQL + Prisma |
-| Auth | JWT 쿠키, bcrypt |
+| App | Next.js 16 (App Router), React 19, TypeScript |
 | UI | Tailwind CSS 4, Lucide |
-| Builder | Fabric.js 7 |
-| Process | PM2 (프로덕션) |
+| 상태 | Zustand (빌더) |
+| 커스텀 캔버스 | Fabric.js 7 |
+| 데이터 | MySQL, Prisma 6 |
+| 인증 | JWT 쿠키, bcrypt, OAuth(카카오·구글) |
+| 결제 준비 | 토스페이먼츠 SDK |
+| 운영 | PM2 |
 
-## 빠른 시작
+---
 
-### 1. 의존성 설치
-
-```bash
-npm install
-```
-
-### 2. 환경 변수
-
-```bash
-cp .env.example .env
-```
-
-`.env`에서 `DATABASE_URL`, `AUTH_SECRET` 등을 설정합니다.
-
-### 3. DB 마이그레이션 & 시드
-
-```bash
-npm run db:setup
-```
-
-시드 후 테스트 계정(개발용):
-- 관리자: `admin@hmaker.com` / `JhAdmin!2026`
-- 고객: 시드 로그 출력 참고
-
-### 4. 개발 서버
-
-```bash
-npm run dev
-```
-
-[http://localhost:3000](http://localhost:3000)
-
-### 5. 프로덕션 빌드
-
-```bash
-npm run build
-npm run start
-# 또는 PM2
-pm2 start npm --name jhproject -- start
-```
-
-## 프로젝트 구조
+## 구조
 
 ```
 src/
-├── app/              # App Router 페이지·API
-├── components/       # UI (home, admin, builder, product …)
-├── lib/              # DB, catalog, auth, pricing …
+├── app/                 # 페이지 · Route Handler API
+├── components/
+│   ├── home/            # 메인 스토어프론트
+│   ├── builder/         # 나염 시안 빌더
+│   ├── product/         # 목록 · 상세 · 기성품
+│   └── admin/           # 백오피스
+├── lib/                 # catalog, auth, pricing, mockup
 └── types/
 prisma/
 ├── schema.prisma
-├── seed.ts
-└── seed-content.ts
+└── seed.ts              # 카테고리 · 상품 · 배너 · 콘텐츠
 ```
 
-## v1.0 범위
+---
 
-- 커스텀/기성품 카탈로그 및 주문 플로우(결제 연동 제외 운영 가능)
-- 관리자 백오피스 전반
-- 콘텐츠(가이드·템플릿·아이디어) 및 통합 admin 리스트 UI
+## 로컬에서 실행
+
+```bash
+npm install
+cp .env.example .env
+# DATABASE_URL, AUTH_SECRET 설정 (MySQL)
+npm run db:setup
+npm run dev
+```
+
+- 스토어: [http://localhost:3000](http://localhost:3000)
+- 관리자: [http://localhost:3000/admin](http://localhost:3000/admin)
+
+시드가 로컬 테스트 계정을 만듭니다. **운영 환경에서는 반드시 비밀번호를 교체하세요.**
+
+```bash
+npm run build && npm start
+```
+
+---
+
+## 현재 범위 / 다음 작업
+
+**들어가 있는 것**
+- 단체복 카탈로그·빌더·주문 상태 머신
+- 관리자 CMS(배너, 원형 메뉴, 아이디어, 상품 목업)
 - SEO 기초(sitemap, robots, 상품 메타)
 
-## 알려진 제한 (v1.0)
+**아직 개발중**
+- 토스페이먼츠 실키·운영 결제
+- 이메일/알림 (현재 로그 스텁)
+- 업로드 스토리지 (로컬 `public/uploads` → 클라우드)
+- 목업·카피 폴리싱, 모바일 QA
 
-- 이메일 알림: `src/lib/notify.ts` — 로그 스텁 (SMTP 미연동)
-- 파일 업로드: 로컬 `public/uploads` (S3 미연동)
-- 결제: 토스페이먼츠 SDK 준비, 실키·운영 연동은 별도 작업
+---
 
 ## 라이선스
 
-Private — [sprint-elite](https://github.com/sprint-elite)
-
-## 버전
-
-| 버전 | 날짜 | 설명 |
-|------|------|------|
-| **v1.0** | 2026-08-27 | 최초 릴리스 — 쇼핑몰·빌더·관리자 코어 |
+Private / portfolio sample. 무단 상업 재배포는 상의해 주세요.

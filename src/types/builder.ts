@@ -122,15 +122,15 @@ export type WorkOrderData = {
 };
 
 export const PRODUCT_TYPE_LABELS: Record<ProductType, string> = {
-  ecobag: "에코백",
-  "shopping-bag": "장바구니",
-  pouch: "파우치",
+  ecobag: "반팔티",
+  "shopping-bag": "카라티",
+  pouch: "후드/집업",
 };
 
 export const SIZE_LABELS: Record<SizeOption, string> = {
-  S: "S (20 × 24cm)",
-  M: "M (22 × 26cm)",
-  L: "L (26 × 30cm)",
+  S: "S (90)",
+  M: "M (95)",
+  L: "L (100)",
 };
 
 export const SIZE_DIMENSIONS: Record<SizeOption, { w: number; h: number }> = {
@@ -163,10 +163,10 @@ export const BAG_COLOR_LABELS: Record<BagColorOption, string> = {
 };
 
 export const FABRIC_LABELS: Record<FabricOption, string> = {
-  cotton10: "면 10수",
+  cotton10: "면 17수",
   cotton20: "면 20수",
-  canvas: "캔버스",
-  nonwoven: "부직포",
+  canvas: "면 32수",
+  nonwoven: "기능성(쿨론)",
 };
 
 export const HANDLE_LABELS: Record<HandleOption, string> = {

@@ -58,11 +58,11 @@ export function ProductOptionPanel() {
       const allowed = product?.optionSchema?.[field.schemaKey] as
         | string[]
         | undefined;
-      const opts = allowed?.length
-        ? field.options.filter(([val]) => allowed.includes(val))
-        : field.options;
+      if (!allowed?.length) return null;
+      const opts = field.options.filter(([val]) => allowed.includes(val));
+      if (!opts.length) return null;
       return { ...field, opts };
-    }).filter((field) => field.opts.length > 0);
+    }).filter((field): field is NonNullable<typeof field> => field !== null);
   }, [product]);
 
   return (

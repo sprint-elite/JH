@@ -7,6 +7,7 @@ import {
 } from "@/lib/product-list";
 import { loadProductListPage } from "@/lib/product-list-page";
 import { fetchStorefrontCategories } from "@/lib/admin-catalog";
+import { SITE_INFO } from "@/lib/site-info";
 
 type PageProps = {
   params: Promise<{ category: string }>;
@@ -28,7 +29,7 @@ export async function generateMetadata({
 
   const meta = await getListCategory(category);
   return {
-    title: `${meta.label} | JH MAKER`,
+    title: `${meta.label} | ${SITE_INFO.brandName}`,
     description: `${meta.heading} 상품을 둘러보세요.`,
   };
 }

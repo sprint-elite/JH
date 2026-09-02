@@ -25,7 +25,7 @@ export function QuickTemplateCard({ tpl }: { tpl: HomeTemplateDto }) {
 
   return (
     <Link
-      href={`/products/${tpl.productSlug}`}
+      href={`/builder?product=${encodeURIComponent(tpl.productSlug)}`}
       className="group block min-w-[min(100%,300px)] shrink-0 sm:min-w-0"
     >
       <div className="overflow-hidden rounded-2xl">

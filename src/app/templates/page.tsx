@@ -1,13 +1,13 @@
 import type { Metadata } from "next";
 import { prisma } from "@/lib/db";
 import { resolveProductType } from "@/lib/catalog";
+import { SITE_INFO } from "@/lib/site-info";
 import { TEMPLATE_COLLECTIONS } from "@/lib/template-collections";
 import { TemplatesPageView } from "@/components/templates/TemplatesPageView";
 
 export const metadata: Metadata = {
   title: "2분컷 템플릿",
-  description:
-    "상황별 굿즈 소개와 추천 상품을 한눈에. 문구·로고만 바꾸면 완성되는 JH MAKER 무료 템플릿.",
+  description: `상황별 단체티 소개와 추천 상품을 한눈에. 로고·문구만 바꾸면 완성되는 ${SITE_INFO.brandName} 무료 템플릿.`,
 };
 
 export const dynamic = "force-dynamic";
@@ -32,12 +32,25 @@ export default async function TemplatesPage() {
 
   const bySlug = Object.fromEntries(productRows.map((p) => [p.slug, p]));
 
+  const ideaSlugs = TEMPLATE_COLLECTIONS.map((c) => c.ideaSlug);
+  const articles = await prisma.contentArticle.findMany({
+    where: { slug: { in: ideaSlugs }, isActive: true },
+    select: {
+      slug: true,
+      title: true,
+      subtitle: true,
+      coverImageUrl: true,
+    },
+  });
+  const articleBySlug = Object.fromEntries(articles.map((a) => [a.slug, a]));
+
   const collections = TEMPLATE_COLLECTIONS.map((col) => ({
     id: col.id,
     ideaSlug: col.ideaSlug,
-    title: col.title,
-    subtitle: col.subtitle,
-    coverImageUrl: col.coverImageUrl,
+    title: articleBySlug[col.ideaSlug]?.title ?? col.title,
+    subtitle: articleBySlug[col.ideaSlug]?.subtitle ?? col.subtitle,
+    coverImageUrl:
+      articleBySlug[col.ideaSlug]?.coverImageUrl ?? col.coverImageUrl,
     products: col.items
       .map((item) => {
         const p = bySlug[item.productSlug];

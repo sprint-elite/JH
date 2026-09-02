@@ -19,25 +19,25 @@ const siteUrl = getSiteUrl();
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: "JH MAKER | 커스텀 굿즈 제작",
-    template: "%s | JH MAKER",
+    default: "대지나염 | 정직한 단체티 나염",
+    template: "%s | 대지나염",
   },
   description:
-    "에코백, 장바구니, 파우치를 나만의 디자인으로 1개부터 제작하세요.",
+    "반팔티, 카라티, 후드·맨투맨을 나염으로 1장부터 제작하세요.",
   openGraph: {
     type: "website",
     locale: "ko_KR",
-    siteName: "JH MAKER",
-    title: "JH MAKER | 커스텀 굿즈 제작",
+    siteName: "대지나염",
+    title: "대지나염 | 정직한 단체티 나염",
     description:
-      "에코백, 장바구니, 파우치를 나만의 디자인으로 1개부터 제작하세요.",
+      "반팔티, 카라티, 후드·맨투맨을 나염으로 1장부터 제작하세요.",
     url: siteUrl,
   },
   twitter: {
     card: "summary_large_image",
-    title: "JH MAKER | 커스텀 굿즈 제작",
+    title: "대지나염 | 정직한 단체티 나염",
     description:
-      "에코백, 장바구니, 파우치를 나만의 디자인으로 1개부터 제작하세요.",
+      "반팔티, 카라티, 후드·맨투맨을 나염으로 1장부터 제작하세요.",
   },
   robots: {
     index: true,

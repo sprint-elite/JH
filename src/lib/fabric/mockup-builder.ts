@@ -2,6 +2,7 @@ import type { BuilderOptions, ProductType, SizeOption, ViewSide } from "@/types/
 import {
   PRINT_AREA_CM,
   PRINT_AREA_REFERENCE_CM,
+  PRODUCT_TYPE_LABELS,
   SIZE_DIMENSIONS,
   bagSizeScale,
 } from "@/types/builder";
@@ -22,41 +23,77 @@ export type PhotoMockup = {
   handleMaskSrc?: string;
 };
 
-const ECOBAG_FRONT: PhotoMockup = {
-  src: "/mockups/ecobag-front-removebg-preview.png",
-  width: 394,
-  height: 526,
+const TEE_FRONT: PhotoMockup = {
+  src: "/mockups/tee-front.png",
+  width: 400,
+  height: 520,
   hasAlpha: true,
-  print: { x: 0.1, y: 0.3, w: 0.8, h: 0.62 },
-  tint: { x: 0.07, y: 0.03, w: 0.86, h: 0.94 },
-  bodyMaskSrc: "/mockups/ecobag_body_original_position.png",
-  handleMaskSrc: "/mockups/ecobag_handle_original_position.png",
+  print: { x: 0.28, y: 0.32, w: 0.44, h: 0.32 },
+  tint: { x: 0.18, y: 0.16, w: 0.64, h: 0.72 },
 };
 
-const ECOBAG_BACK: PhotoMockup = {
-  src: "/mockups/ecobag-back.png",
-  width: 430,
-  height: 548,
+const TEE_BACK: PhotoMockup = {
+  src: "/mockups/tee-back.png",
+  width: 400,
+  height: 520,
   hasAlpha: true,
-  print: { x: 0.1, y: 0.3, w: 0.8, h: 0.62 },
-  tint: { x: 0.08, y: 0.04, w: 0.84, h: 0.9 },
-  bodyMaskSrc: "/mockups/ecobag_back_body_original_position.png",
-  handleMaskSrc: "/mockups/ecobag_back_handle_original_position.png",
+  print: { x: 0.28, y: 0.3, w: 0.44, h: 0.34 },
+  tint: { x: 0.18, y: 0.16, w: 0.64, h: 0.72 },
 };
 
-/** 측면은 사진 없음 — 앞면 사진 + 오버레이 */
-const ECOBAG_SIDE: PhotoMockup = {
-  ...ECOBAG_FRONT,
-  print: { x: 0.2, y: 0.35, w: 0.55, h: 0.45 },
+const POLO_FRONT: PhotoMockup = {
+  src: "/mockups/polo-front.png",
+  width: 400,
+  height: 520,
+  hasAlpha: true,
+  print: { x: 0.3, y: 0.34, w: 0.4, h: 0.28 },
+  tint: { x: 0.18, y: 0.16, w: 0.64, h: 0.72 },
+};
+
+const POLO_BACK: PhotoMockup = {
+  src: "/mockups/polo-back.png",
+  width: 400,
+  height: 520,
+  hasAlpha: true,
+  print: { x: 0.28, y: 0.3, w: 0.44, h: 0.34 },
+  tint: { x: 0.18, y: 0.16, w: 0.64, h: 0.72 },
+};
+
+const HOODIE_FRONT: PhotoMockup = {
+  src: "/mockups/hoodie-front.png",
+  width: 400,
+  height: 520,
+  hasAlpha: true,
+  print: { x: 0.3, y: 0.34, w: 0.4, h: 0.28 },
+  tint: { x: 0.16, y: 0.12, w: 0.68, h: 0.78 },
+};
+
+const HOODIE_BACK: PhotoMockup = {
+  src: "/mockups/hoodie-back.png",
+  width: 400,
+  height: 520,
+  hasAlpha: true,
+  print: { x: 0.28, y: 0.28, w: 0.44, h: 0.36 },
+  tint: { x: 0.16, y: 0.12, w: 0.68, h: 0.78 },
 };
 
 const PHOTO_MOCKUPS: Partial<
   Record<ProductType, Partial<Record<ViewSide, PhotoMockup>>>
 > = {
   ecobag: {
-    front: ECOBAG_FRONT,
-    back: ECOBAG_BACK,
-    side: ECOBAG_SIDE,
+    front: TEE_FRONT,
+    back: TEE_BACK,
+    side: TEE_FRONT,
+  },
+  "shopping-bag": {
+    front: POLO_FRONT,
+    back: POLO_BACK,
+    side: POLO_FRONT,
+  },
+  pouch: {
+    front: HOODIE_FRONT,
+    back: HOODIE_BACK,
+    side: HOODIE_FRONT,
   },
 };
 
@@ -103,7 +140,7 @@ export function getPhotoMockup(
   return PHOTO_MOCKUPS[productType]?.[side] ?? null;
 }
 
-/** DB 목업 면 → PhotoMockup (마스크는 동일 builderType 코드 폴백) */
+/** DB 목업 면 → PhotoMockup. 상품 이미지를 쓰고 가방 마스크는 붙이지 않음 */
 export function photoMockupFromDbFace(
   face: {
     imageUrl: string;
@@ -114,10 +151,9 @@ export function photoMockupFromDbFace(
     printW: number;
     printH: number;
   },
-  productType: ProductType,
-  side: ViewSide,
+  _productType: ProductType,
+  _side: ViewSide,
 ): PhotoMockup {
-  const code = getPhotoMockup(productType, side);
   const print = {
     x: face.printX,
     y: face.printY,
@@ -128,11 +164,9 @@ export function photoMockupFromDbFace(
     src: face.imageUrl,
     width: face.imageWidth,
     height: face.imageHeight,
-    hasAlpha: code?.hasAlpha ?? true,
+    hasAlpha: true,
     print,
-    tint: code?.tint ?? print,
-    bodyMaskSrc: code?.bodyMaskSrc,
-    handleMaskSrc: code?.handleMaskSrc,
+    tint: print,
   };
 }
 
@@ -246,15 +280,7 @@ export function getSizeLabel(size: SizeOption): string {
 }
 
 export function getProductTitle(options: BuilderOptions): string {
-  const name =
-    options.productType === "ecobag"
-      ? "사각 에코백"
-      : options.productType === "shopping-bag"
-        ? "장바구니"
-        : "파우치";
-  const sizeName =
-    options.size === "S" ? "소형" : options.size === "M" ? "중형" : "대형";
-  return `${name} (${sizeName})`;
+  return `${PRODUCT_TYPE_LABELS[options.productType]} (${options.size})`;
 }
 
 /* SVG fallback for non-photo products */

@@ -1,15 +1,9 @@
 import { NextResponse } from "next/server";
+import { BANNER_PLACEMENT_VALUES } from "@/lib/banner-placements";
 import type { BannerPlacement, Prisma } from "@prisma/client";
 import { requireAdmin } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { handleApiError, jsonError } from "@/lib/api-utils";
-
-const PLACEMENTS = new Set([
-  "HOME_HERO",
-  "HOME_PROMO",
-  "HOME_IDEA",
-  "HOME_GUIDE",
-]);
 
 export async function GET() {
   try {
@@ -39,7 +33,7 @@ export async function POST(request: Request) {
 
     if (!body.title?.trim()) return jsonError("제목을 입력해 주세요.", 400);
     if (!body.linkUrl?.trim()) return jsonError("링크를 입력해 주세요.", 400);
-    if (!body.placement || !PLACEMENTS.has(body.placement)) {
+    if (!body.placement || !BANNER_PLACEMENT_VALUES.has(body.placement)) {
       return jsonError("배치 위치가 올바르지 않습니다.", 400);
     }
 

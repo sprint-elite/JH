@@ -60,7 +60,7 @@ export function TemplatesPageView({
                     return (
                       <li key={`${col.id}-${p.slug}`}>
                         <Link
-                          href={`/products/${p.slug}`}
+                          href={`/builder?product=${encodeURIComponent(p.slug)}`}
                           className="group/item flex flex-col"
                         >
                           <div className="relative aspect-square overflow-hidden rounded-xl bg-zinc-50">

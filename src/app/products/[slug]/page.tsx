@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { ProductDetailPage } from "@/components/product/ProductDetailPage";
 import { fetchProductDetailBySlug } from "@/lib/catalog";
 import { getSiteUrl } from "@/lib/site-url";
+import { SITE_INFO } from "@/lib/site-info";
 import type { Metadata } from "next";
 
 type PageProps = {
@@ -26,7 +27,7 @@ export async function generateMetadata({
     title: product.name,
     description,
     openGraph: {
-      title: `${product.name} | JH MAKER`,
+      title: `${product.name} | ${SITE_INFO.brandName}`,
       description,
       url,
       type: "website",

@@ -128,13 +128,20 @@ export const HERO_BANNERS = [
 
 export const CATEGORY_CHIPS = [
   { label: "신상품", href: "#new", highlight: true },
-  { label: "JH 베스트", href: "#products" },
-  { label: "기업 맞춤 제작", href: "/builder" },
+  { label: "대지나염 베스트", href: "#products" },
+  { label: "기업 유니폼", href: "/builder" },
   { label: "2분컷 템플릿", href: "/templates" },
-  { label: "에코백", href: "/products/ecobag" },
-  { label: "장바구니", href: "/products/shopping-bag" },
-  { label: "파우치", href: "/products/pouch" },
-  { label: "단체 키트", href: "/builder" },
+  { label: "반팔티", href: "/products/list/tee" },
+  { label: "카라티", href: "/products/list/polo" },
+  { label: "기능성", href: "/products/list/functional" },
+  { label: "긴팔티", href: "/products/list/long-sleeve" },
+  { label: "후드/집업", href: "/products/list/hoodie" },
+  { label: "맨투맨", href: "/products/list/sweatshirt" },
+  { label: "아동단체", href: "/products/list/kids" },
+  { label: "조끼", href: "/products/list/vest" },
+  { label: "단체점퍼", href: "/products/list/jumper" },
+  { label: "야구점퍼", href: "/products/list/baseball" },
+  { label: "단체 제작", href: "/builder" },
   { label: "내 주문", href: "/mypage" },
 ] as const;
 
@@ -178,7 +185,7 @@ export const SHOWCASE_BEST: ShowcaseItem[] = [
   {
     id: "b1",
     name: "사각 에코백 (기본)",
-    brand: "JH MAKER",
+    brand: "대지나염",
     productType: "ecobag",
     price: 3500,
     rating: 4.97,
@@ -189,7 +196,7 @@ export const SHOWCASE_BEST: ShowcaseItem[] = [
   {
     id: "b2",
     name: "장바구니 (중형)",
-    brand: "JH MAKER",
+    brand: "대지나염",
     productType: "shopping-bag",
     price: 2800,
     rating: 4.97,
@@ -200,7 +207,7 @@ export const SHOWCASE_BEST: ShowcaseItem[] = [
   {
     id: "b3",
     name: "파우치 (기본)",
-    brand: "JH MAKER",
+    brand: "대지나염",
     productType: "pouch",
     price: 2200,
     rating: 4.97,
@@ -211,7 +218,7 @@ export const SHOWCASE_BEST: ShowcaseItem[] = [
   {
     id: "b4",
     name: "에코백 M · 캔버스",
-    brand: "JH MAKER",
+    brand: "대지나염",
     productType: "ecobag",
     price: 4500,
     originalPrice: 5500,
@@ -226,7 +233,7 @@ export const SHOWCASE_BEST: ShowcaseItem[] = [
   {
     id: "b5",
     name: "에코백 L · 면20수",
-    brand: "JH MAKER",
+    brand: "대지나염",
     productType: "ecobag",
     price: 4000,
     originalPrice: 4800,
@@ -241,7 +248,7 @@ export const SHOWCASE_BEST: ShowcaseItem[] = [
   {
     id: "b6",
     name: "장바구니 L · 비닐손잡이",
-    brand: "JH MAKER",
+    brand: "대지나염",
     productType: "shopping-bag",
     price: 3200,
     rating: 4.95,
@@ -252,7 +259,7 @@ export const SHOWCASE_BEST: ShowcaseItem[] = [
   {
     id: "b7",
     name: "파우치 · 지퍼형",
-    brand: "JH MAKER",
+    brand: "대지나염",
     productType: "pouch",
     price: 2900,
     rating: 4.88,
@@ -263,7 +270,7 @@ export const SHOWCASE_BEST: ShowcaseItem[] = [
   {
     id: "b8",
     name: "에코백 S · 무지",
-    brand: "JH MAKER",
+    brand: "대지나염",
     productType: "ecobag",
     price: 3500,
     rating: 5.0,
@@ -274,7 +281,7 @@ export const SHOWCASE_BEST: ShowcaseItem[] = [
   {
     id: "b9",
     name: "에코백 · 앞뒤 인쇄",
-    brand: "JH MAKER",
+    brand: "대지나염",
     productType: "ecobag",
     price: 5200,
     originalPrice: 6500,
@@ -289,7 +296,7 @@ export const SHOWCASE_BEST: ShowcaseItem[] = [
   {
     id: "b10",
     name: "장바구니 · 대량 제작",
-    brand: "JH MAKER",
+    brand: "대지나염",
     productType: "shopping-bag",
     price: 2500,
     originalPrice: 2800,
@@ -304,7 +311,7 @@ export const SHOWCASE_BEST: ShowcaseItem[] = [
   {
     id: "b11",
     name: "파우치 · 3면 인쇄",
-    brand: "JH MAKER",
+    brand: "대지나염",
     productType: "pouch",
     price: 3500,
     rating: 4.95,
@@ -315,7 +322,7 @@ export const SHOWCASE_BEST: ShowcaseItem[] = [
   {
     id: "b12",
     name: "에코백 · 기업 로고",
-    brand: "JH MAKER",
+    brand: "대지나염",
     productType: "ecobag",
     price: 3800,
     rating: 4.97,
@@ -343,9 +350,9 @@ export const SHOWCASE_TRENDING = [
 ];
 
 const LIST_SLUG: Record<ProductType, string> = {
-  ecobag: "ecobag",
-  "shopping-bag": "shopping-bag",
-  pouch: "pouch",
+  ecobag: "tee",
+  "shopping-bag": "polo",
+  pouch: "hoodie",
 };
 
 /** 메인 — 하이퀄리티 라인업 (SHOWCASE_BEST 상위 8개) */
@@ -379,107 +386,107 @@ export type IdeaBanner = {
 
 export const IDEA_BANNERS: IdeaBanner[] = [
   {
-    title: "커플 에코백",
-    subtitle: "우정 · 커플 굿즈",
+    title: "커플 · 우정 단체티",
+    subtitle: "이니셜 · 날짜 나염",
     href: "/ideas/couple-ecobag",
     gradient: "from-pink-200 to-rose-100",
     emoji: "💕",
-    imageUrl: "/images/couple_ecobag.png",
+    imageUrl: "/images/idea1.png",
   },
   {
-    title: "집꾸미기",
-    subtitle: "파우치 · 수납",
+    title: "동아리 단체복",
+    subtitle: "후드 · 맨투맨",
     href: "/ideas/home-deco",
     gradient: "from-amber-200 to-orange-100",
     emoji: "🏠",
-    imageUrl: "/images/house.png",
+    imageUrl: "/images/idea2.png",
   },
   {
-    title: "여행 필수템",
-    subtitle: "에코백 · 장바구니",
+    title: "MT · 여행 단체티",
+    subtitle: "기능성 반팔",
     href: "/ideas/travel-essentials",
     gradient: "from-sky-200 to-blue-100",
     emoji: "✈️",
-    imageUrl: "/images/trip.png",
+    imageUrl: "/images/idea3.png",
   },
   {
-    title: "반려동물 산책",
-    subtitle: "산책용 파우치",
+    title: "가족 · 키즈 단체티",
+    subtitle: "아동 사이즈",
     href: "/ideas/pet-walk",
     gradient: "from-emerald-200 to-green-100",
     emoji: "🐕",
-    imageUrl: "/images/pet.png",
+    imageUrl: "/images/idea4.png",
   },
   {
-    title: "마켓·플리마켓",
-    subtitle: "장바구니 대량",
+    title: "체육대회 · 축제",
+    subtitle: "대량 나염",
     href: "/ideas/flea-market",
     gradient: "from-stone-200 to-zinc-100",
     emoji: "🛒",
-    imageUrl: "/images/market.png",
+    imageUrl: "/images/idea5.png",
   },
   {
-    title: "기업 웰컴 키트",
-    subtitle: "브랜드 맞춤",
+    title: "기업 유니폼",
+    subtitle: "워크샵 · 입사",
     href: "/ideas/welcome-kit",
     gradient: "from-zinc-200 to-slate-100",
     emoji: "🏢",
-    imageUrl: "/images/company.png",
+    imageUrl: "/images/idea6.png",
   },
   {
-    title: "팬미팅 굿즈",
-    subtitle: "최애 굿즈 제작",
+    title: "팬미팅 슬로건티",
+    subtitle: "응원 · 생일카페",
     href: "/ideas/fan-meeting",
     gradient: "from-rose-100 to-orange-50",
     emoji: "⭐",
-    imageUrl: "/images/goods.png",
+    imageUrl: "/images/idea7.png",
   },
   {
-    title: "카페 오픈 기념",
-    subtitle: "에코백 + 파우치",
+    title: "카페 스태프티",
+    subtitle: "카라티 유니폼",
     href: "/ideas/cafe-opening",
     gradient: "from-yellow-100 to-amber-50",
     emoji: "☕",
-    imageUrl: "/images/coffee.png",
+    imageUrl: "/images/idea8.png",
   },
 ];
 
 export const GUIDE_CARDS = [
   {
     id: "ecobag-guide",
-    title: "에코백 제작 완벽 가이드",
-    subtitle: "사이즈·원단·인쇄면 선택부터 제작 주의사항까지",
+    title: "단체티 제작 완벽 가이드",
+    subtitle: "원단·사이즈·나염 도수부터 제작 주의사항까지",
     href: "/guides/ecobag-guide",
     gradient: "from-teal-100 to-emerald-50",
   },
   {
     id: "fnb-goods",
-    title: "F&B 브랜드 굿즈 제작 사례",
-    subtitle: "카페·베이커리 에코백 제작 사례와 수량별 가격",
+    title: "매장·카페 유니폼 제작 사례",
+    subtitle: "카라티·스태프티 수량별 단가와 인쇄 팁",
     href: "/guides/fnb-goods",
     gradient: "from-orange-100 to-amber-50",
   },
   {
     id: "event-shopping-bag",
-    title: "단체 행사 장바구니 제작",
-    subtitle: "마켓·축제용 장바구니 1개부터 대량 제작",
+    title: "체육대회·행사 단체티 제작",
+    subtitle: "학교·축제용 반팔티 대량 나염",
     href: "/guides/event-shopping-bag",
     gradient: "from-blue-100 to-sky-50",
   },
   {
     id: "print-resolution",
-    title: "이미지 해상도 가이드",
-    subtitle: "선명한 인쇄를 위한 이미지 준비 꿀팁",
+    title: "나염 인쇄 해상도 가이드",
+    subtitle: "선명한 로고를 위한 파일 준비 꿀팁",
     href: "/guides/print-resolution",
     gradient: "from-stone-100 to-zinc-50",
   },
 ] as const;
 
 /** 메인 리뷰 섹션·리뷰 링크 표시 */
-export const SHOW_HOME_REVIEWS_SECTION = true;
+export const SHOW_HOME_REVIEWS_SECTION = false;
 
 /** 신상품·트렌딩 섹션 표시 */
-export const SHOW_HOME_NEW_AND_TRENDING_SECTIONS = true;
+export const SHOW_HOME_NEW_AND_TRENDING_SECTIONS = false;
 
 export const REVIEWS = [
   {
@@ -564,9 +571,9 @@ export const PRODUCT_GRADIENTS: Record<ProductType, string> = {
 
 /** 메인·카드용 상품 썸네일 이미지 */
 export const PRODUCT_DISPLAY_IMAGES: Partial<Record<ProductType, string>> = {
-  ecobag: "/images/ecobag.png",
-  "shopping-bag": "/images/martbag.png",
-  pouch: "/images/goods.png",
+  ecobag: "/images/tee.png",
+  "shopping-bag": "/images/polo.png",
+  pouch: "/images/hoodie.png",
 };
 
 export const TRUST_STATS = [

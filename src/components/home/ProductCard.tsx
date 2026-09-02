@@ -48,15 +48,9 @@ export function ProductCard({
     return (
       <Link
         href={href}
-        className="group flex w-[7.5rem] flex-col items-center sm:w-32"
+        className="group flex w-[7.5rem] shrink-0 flex-col items-center sm:w-32 lg:w-full"
       >
         <div className="relative shrink-0">
-          {item.badge && (
-            <span className="absolute left-1.5 top-2 z-20 rounded-md bg-rose-500 px-1.5 py-0.5 text-[9px] font-bold leading-none text-white shadow-sm ring-2 ring-white">
-              {item.badge}
-            </span>
-          )}
-
           <div
             className={`relative ${CIRCLE_SIZE} overflow-hidden rounded-full ${
               hasPhoto
@@ -84,7 +78,7 @@ export function ProductCard({
           </div>
         </div>
 
-        <p className="mt-2.5 line-clamp-2 w-full text-center text-sm font-semibold leading-snug text-zinc-900">
+        <p className="mt-2.5 w-full truncate px-0.5 text-center text-[11px] font-semibold leading-none text-zinc-800">
           {item.name}
         </p>
       </Link>
@@ -97,27 +91,22 @@ export function ProductCard({
       className="group flex flex-col overflow-hidden rounded-xl bg-white transition-shadow hover:shadow-[0_8px_30px_rgba(0,0,0,0.08)]"
     >
       <div
-        className={`relative flex aspect-square items-center justify-center overflow-hidden ${
+        className={`relative aspect-square overflow-hidden ${
           hasPhoto
-            ? "bg-white"
+            ? "bg-zinc-100"
             : `bg-gradient-to-br ${PRODUCT_GRADIENTS[item.productType]}`
         }`}
       >
-        {item.badge && (
-          <span className="absolute left-2.5 top-2.5 z-10 rounded-md bg-rose-500 px-2 py-0.5 text-[10px] font-bold text-white">
-            {item.badge}
-          </span>
-        )}
-        <span
-          className={`absolute right-2.5 top-2.5 z-10 rounded-md px-2 py-0.5 text-[10px] font-bold text-white ${
-            item.saleType === "READYMADE" ? "bg-zinc-800" : "bg-emerald-600"
-          }`}
-        >
-          {item.saleType === "READYMADE" ? "기성품" : "커스텀"}
-        </span>
-
-        <div className="transition-transform duration-300 group-hover:scale-105">
-          {item.thumbnailUrl ? null : (
+        {imageSrc ? (
+          <Image
+            src={imageSrc}
+            alt={item.name}
+            fill
+            className="object-cover transition-transform duration-300 group-hover:scale-105"
+            sizes="(max-width: 640px) 50vw, 25vw"
+          />
+        ) : (
+          <div className="flex h-full w-full items-center justify-center">
             <ProductVisual
               productType={item.productType}
               color={
@@ -125,17 +114,8 @@ export function ProductCard({
               }
               size={compact ? "sm" : "md"}
             />
-          )}
-        </div>
-        {item.thumbnailUrl ? (
-          <Image
-            src={item.thumbnailUrl}
-            alt={item.name}
-            fill
-            className="object-contain p-6 transition-transform duration-300 group-hover:scale-105"
-            sizes="(max-width: 640px) 50vw, 25vw"
-          />
-        ) : null}
+          </div>
+        )}
 
         {variant !== "shop" && (
           <div className="absolute inset-x-0 bottom-0 translate-y-full bg-zinc-900/90 px-3 py-3 text-center text-xs font-semibold text-white transition-transform duration-200 group-hover:translate-y-0 sm:text-sm">

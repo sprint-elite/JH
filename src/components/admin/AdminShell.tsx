@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import {
   BarChart3,
@@ -123,9 +123,23 @@ interface AdminShellProps {
 
 export function AdminShell({ user, children }: AdminShellProps) {
   const pathname = usePathname();
+  const router = useRouter();
   const { logout } = useAuth();
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
   const [ready, setReady] = useState(false);
+  const [loggingOut, setLoggingOut] = useState(false);
+
+  const handleLogout = async () => {
+    if (loggingOut) return;
+    setLoggingOut(true);
+    try {
+      await logout();
+      router.push("/admin/login");
+      router.refresh();
+    } finally {
+      setLoggingOut(false);
+    }
+  };
 
   useEffect(() => {
     setCollapsed(readCollapsed());
@@ -254,11 +268,12 @@ export function AdminShell({ user, children }: AdminShellProps) {
           </div>
           <button
             type="button"
-            onClick={() => void logout()}
-            className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-xs font-medium text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-700"
+            disabled={loggingOut}
+            onClick={() => void handleLogout()}
+            className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-xs font-medium text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-700 disabled:opacity-50"
           >
             <LogOut className="h-3.5 w-3.5" />
-            로그아웃
+            {loggingOut ? "로그아웃 중…" : "로그아웃"}
           </button>
         </div>
       </aside>

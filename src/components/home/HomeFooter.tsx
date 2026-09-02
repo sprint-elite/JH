@@ -23,8 +23,7 @@ export function HomeFooter({ wide = false }: { wide?: boolean }) {
               {info.brandName}
             </Link>
             <p className="mt-3 max-w-sm text-sm leading-relaxed text-zinc-500">
-              나만의 커스텀 굿즈를 디자인하고 주문부터 제작 관리까지 한곳에서.
-              에코백, 장바구니, 파우치 1개부터 제작 가능합니다.
+              반팔티·카라티·후드까지, 로고 나염 단체티를 1장부터 제작합니다.
             </p>
           </div>
 

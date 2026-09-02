@@ -192,7 +192,7 @@ export function ReadyMadeProductView({ product }: ReadyMadeProductViewProps) {
               <>
                 <li>
                   <Link
-                    href={`/products/list/${product.productType === "shopping-bag" ? "shopping-bag" : product.productType}`}
+                    href={`/products/list/${product.categorySlug ?? (product.productType === "shopping-bag" ? "polo" : product.productType === "pouch" ? "hoodie" : "tee")}`}
                     className="hover:text-zinc-700"
                   >
                     {product.categoryName}

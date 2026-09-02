@@ -27,6 +27,7 @@ import {
   type BuilderProductOption,
 } from "./ProductChangeModal";
 import { useAuth } from "@/hooks/useAuth";
+import { SITE_INFO } from "@/lib/site-info";
 import { useBuilderStore } from "@/store";
 import { calculatePrice, type PricingContext } from "@/lib/pricing";
 import {
@@ -671,7 +672,7 @@ export function BuilderPage({
               href="/"
               className="shrink-0 text-lg font-black tracking-tight text-zinc-900"
             >
-              JH MAKER
+              {SITE_INFO.brandName}
             </Link>
           )}
           {productTitle && (

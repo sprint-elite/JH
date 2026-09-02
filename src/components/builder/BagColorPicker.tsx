@@ -20,7 +20,7 @@ export function BagColorPicker() {
   return (
     <div>
       <p className="mb-2 text-sm font-semibold text-zinc-800">
-        본체 색상 - {BAG_COLOR_LABELS[bagColor]}
+        색상 - {BAG_COLOR_LABELS[bagColor]}
       </p>
       <div className="flex flex-wrap gap-2">
         {presets.map((preset) => {          const active = bagColor === preset.id;

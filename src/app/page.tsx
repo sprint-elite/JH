@@ -7,14 +7,14 @@ export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: {
-    absolute: "JH MAKER | 커스텀 굿즈 제작",
+    absolute: "대지나염 | 정직한 단체티 나염",
   },
   description:
-    "에코백, 장바구니, 파우치를 나만의 디자인으로 1개부터 제작하세요. 베스트·신상품·리뷰를 한곳에서 확인하세요.",
+    "반팔티, 카라티, 후드·맨투맨을 나염으로 1장부터 제작하세요. 베스트·신상품을 한곳에서 확인하세요.",
   openGraph: {
-    title: "JH MAKER | 커스텀 굿즈 제작",
+    title: "대지나염 | 정직한 단체티 나염",
     description:
-      "에코백, 장바구니, 파우치를 나만의 디자인으로 1개부터 제작하세요.",
+      "반팔티, 카라티, 후드·맨투맨을 나염으로 1장부터 제작하세요.",
     url: getSiteUrl(),
   },
   alternates: {

@@ -10,6 +10,10 @@ import {
   Trash2,
   X,
 } from "lucide-react";
+import {
+  BANNER_PLACEMENTS,
+  bannerPlacementLabel,
+} from "@/lib/banner-placements";
 
 type BannerRow = {
   id: string;
@@ -23,14 +27,7 @@ type BannerRow = {
   isActive: boolean;
 };
 
-const PLACEMENTS = [
-  { value: "HOME_HERO", label: "히어로" },
-  { value: "HOME_PROMO", label: "프로모" },
-  { value: "HOME_IDEA", label: "아이디어" },
-  { value: "HOME_GUIDE", label: "가이드" },
-] as const;
-
-type PlacementFilter = "ALL" | (typeof PLACEMENTS)[number]["value"];
+type PlacementFilter = "ALL" | (typeof BANNER_PLACEMENTS)[number]["value"];
 type StatusFilter = "ALL" | "ACTIVE" | "INACTIVE";
 
 const empty = (): Omit<BannerRow, "id"> => ({
@@ -44,10 +41,6 @@ const empty = (): Omit<BannerRow, "id"> => ({
   isActive: true,
 });
 
-function placementLabel(value: string) {
-  return PLACEMENTS.find((p) => p.value === value)?.label ?? value;
-}
-
 export function AdminBannerManager({
   initialBanners,
 }: {
@@ -59,6 +52,7 @@ export function AdminBannerManager({
   const [detailId, setDetailId] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const [placementFilter, setPlacementFilter] =
@@ -67,7 +61,7 @@ export function AdminBannerManager({
 
   const placementCounts = useMemo(() => {
     const counts: Record<string, number> = { ALL: rows.length };
-    for (const p of PLACEMENTS) counts[p.value] = 0;
+    for (const p of BANNER_PLACEMENTS) counts[p.value] = 0;
     for (const r of rows) counts[r.placement] = (counts[r.placement] ?? 0) + 1;
     return counts;
   }, [rows]);
@@ -99,8 +93,14 @@ export function AdminBannerManager({
   const detail = detailId ? rows.find((r) => r.id === detailId) ?? null : null;
 
   const openCreate = () => {
+    const placement =
+      placementFilter === "ALL" ? "HOME_HERO" : placementFilter;
+    const nextOrder =
+      rows
+        .filter((r) => r.placement === placement)
+        .reduce((max, r) => Math.max(max, r.sortOrder), -1) + 1;
     setEditId(null);
-    setForm(empty());
+    setForm({ ...empty(), placement, sortOrder: nextOrder });
     setError(null);
     setOpen(true);
   };
@@ -119,6 +119,23 @@ export function AdminBannerManager({
     });
     setError(null);
     setOpen(true);
+  };
+
+  const uploadImage = async (file: File) => {
+    setUploading(true);
+    setError(null);
+    try {
+      const body = new FormData();
+      body.append("file", file);
+      const res = await fetch("/api/admin/uploads", { method: "POST", body });
+      const data = (await res.json()) as { url?: string; error?: string };
+      if (!res.ok || !data.url) throw new Error(data.error ?? "업로드 실패");
+      setForm((f) => ({ ...f, imageUrl: data.url! }));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "업로드 실패");
+    } finally {
+      setUploading(false);
+    }
   };
 
   const save = async () => {
@@ -195,7 +212,7 @@ export function AdminBannerManager({
             배너 · 홈 콘텐츠
           </h1>
           <p className="mt-2 text-sm text-slate-500">
-            히어로 / 프로모 / 아이디어 / 가이드 배너를 관리합니다.
+            히어로 · 원형 메뉴 · 프로모 · 아이디어 · 가이드를 관리합니다.
           </p>
         </div>
         <button
@@ -249,7 +266,7 @@ export function AdminBannerManager({
               count={placementCounts.ALL}
               onClick={() => setPlacementFilter("ALL")}
             />
-            {PLACEMENTS.map((p) => (
+            {BANNER_PLACEMENTS.map((p) => (
               <FilterChip
                 key={p.value}
                 active={placementFilter === p.value}
@@ -293,7 +310,11 @@ export function AdminBannerManager({
                     >
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-3">
-                          <BannerThumb url={b.imageUrl} title={b.title} />
+                          <BannerThumb
+                            url={b.imageUrl}
+                            title={b.title}
+                            circle={b.placement === "HOME_CIRCLE"}
+                          />
                           <div className="min-w-0">
                             <p className="truncate font-medium text-slate-900">
                               {b.title}
@@ -313,7 +334,7 @@ export function AdminBannerManager({
                       </td>
                       <td className="px-3 py-3">
                         <span className="rounded-md bg-indigo-50 px-1.5 py-0.5 text-[11px] font-semibold text-indigo-700">
-                          {placementLabel(b.placement)}
+                          {bannerPlacementLabel(b.placement)}
                         </span>
                       </td>
                       <td className="max-w-[180px] truncate px-3 py-3 font-mono text-xs text-slate-500">
@@ -362,7 +383,11 @@ export function AdminBannerManager({
                   onClick={() => setDetailId(b.id)}
                   className="flex w-full gap-3 px-4 py-4 text-left hover:bg-slate-50/80"
                 >
-                  <BannerThumb url={b.imageUrl} title={b.title} />
+                  <BannerThumb
+                    url={b.imageUrl}
+                    title={b.title}
+                    circle={b.placement === "HOME_CIRCLE"}
+                  />
                   <div className="min-w-0 flex-1">
                     <div className="flex items-start justify-between gap-2">
                       <p className="truncate font-semibold text-slate-900">
@@ -371,7 +396,7 @@ export function AdminBannerManager({
                       <StatusBadge active={b.isActive} />
                     </div>
                     <p className="mt-1 text-xs text-slate-500">
-                      {placementLabel(b.placement)} · 정렬 {b.sortOrder}
+                      {bannerPlacementLabel(b.placement)} · 정렬 {b.sortOrder}
                     </p>
                     <p className="mt-0.5 truncate font-mono text-[11px] text-slate-400">
                       {b.linkUrl}
@@ -436,7 +461,7 @@ export function AdminBannerManager({
               <DetailRow label="태그" value={detail.tag ?? "—"} />
               <DetailRow
                 label="위치"
-                value={placementLabel(detail.placement)}
+                value={bannerPlacementLabel(detail.placement)}
               />
               <DetailRow label="링크" value={detail.linkUrl} mono />
               <DetailRow label="정렬" value={String(detail.sortOrder)} />
@@ -451,8 +476,8 @@ export function AdminBannerManager({
 
       {open && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl">
-            <div className="flex items-start justify-between gap-3">
+          <div className="flex max-h-[90vh] w-full max-w-lg flex-col overflow-hidden rounded-2xl bg-white shadow-xl">
+            <div className="flex items-start justify-between gap-3 px-6 pt-6">
               <h3 className="text-lg font-semibold text-slate-900">
                 {editId ? "배너 수정" : "배너 추가"}
               </h3>
@@ -464,7 +489,7 @@ export function AdminBannerManager({
                 <X className="h-5 w-5" />
               </button>
             </div>
-            <div className="mt-4 grid gap-3">
+            <div className="mt-4 grid flex-1 gap-3 overflow-y-auto px-6">
               <select
                 value={form.placement}
                 onChange={(e) =>
@@ -472,41 +497,130 @@ export function AdminBannerManager({
                 }
                 className="rounded-xl border border-slate-200 px-3 py-2 text-sm"
               >
-                {PLACEMENTS.map((p) => (
+                {BANNER_PLACEMENTS.map((p) => (
                   <option key={p.value} value={p.value}>
                     {p.label}
                   </option>
                 ))}
               </select>
-              {(
-                [
-                  ["title", "제목"],
-                  ["subtitle", "부제"],
-                  ["tag", "태그/이모지"],
-                  ["linkUrl", "링크"],
-                  ["imageUrl", "이미지 URL"],
-                  ["sortOrder", "정렬"],
-                ] as const
-              ).map(([key, label]) => (
-                <label key={key} className="block text-sm">
-                  <span className="mb-1 block text-xs text-slate-500">
-                    {label}
-                  </span>
-                  <input
-                    value={String(form[key] ?? "")}
-                    onChange={(e) =>
-                      setForm((f) => ({
-                        ...f,
-                        [key]:
-                          key === "sortOrder"
-                            ? Number(e.target.value) || 0
-                            : e.target.value,
-                      }))
-                    }
-                    className="w-full rounded-xl border border-slate-200 px-3 py-2"
+              {form.placement === "HOME_CIRCLE" ? (
+                <p className="rounded-xl bg-slate-50 px-3 py-2 text-xs leading-relaxed text-slate-500">
+                  메인 히어로 아래 원형 메뉴입니다. 이름·이미지·링크·정렬을
+                  바꾸면 홈에 바로 반영됩니다.
+                </p>
+              ) : null}
+              <label className="block text-sm">
+                <span className="mb-1 block text-xs text-slate-500">
+                  {form.placement === "HOME_CIRCLE" ? "이름" : "제목"}
+                </span>
+                <input
+                  value={form.title}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, title: e.target.value }))
+                  }
+                  className="w-full rounded-xl border border-slate-200 px-3 py-2"
+                />
+              </label>
+              {form.placement === "HOME_CIRCLE" ? null : (
+                <>
+                  <label className="block text-sm">
+                    <span className="mb-1 block text-xs text-slate-500">
+                      부제
+                    </span>
+                    <input
+                      value={form.subtitle ?? ""}
+                      onChange={(e) =>
+                        setForm((f) => ({ ...f, subtitle: e.target.value }))
+                      }
+                      className="w-full rounded-xl border border-slate-200 px-3 py-2"
+                    />
+                  </label>
+                  <label className="block text-sm">
+                    <span className="mb-1 block text-xs text-slate-500">
+                      태그/이모지
+                    </span>
+                    <input
+                      value={form.tag ?? ""}
+                      onChange={(e) =>
+                        setForm((f) => ({ ...f, tag: e.target.value }))
+                      }
+                      className="w-full rounded-xl border border-slate-200 px-3 py-2"
+                    />
+                  </label>
+                </>
+              )}
+              <label className="block text-sm">
+                <span className="mb-1 block text-xs text-slate-500">링크</span>
+                <input
+                  value={form.linkUrl}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, linkUrl: e.target.value }))
+                  }
+                  className="w-full rounded-xl border border-slate-200 px-3 py-2"
+                />
+              </label>
+              <div className="block text-sm">
+                <span className="mb-1 block text-xs text-slate-500">
+                  {form.placement === "HOME_CIRCLE"
+                    ? "원형 이미지"
+                    : "이미지"}
+                </span>
+                {form.imageUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={form.imageUrl}
+                    alt=""
+                    className={`mb-2 object-cover bg-slate-100 ${
+                      form.placement === "HOME_CIRCLE"
+                        ? "h-20 w-20 rounded-full"
+                        : "h-24 w-full rounded-xl"
+                    }`}
                   />
-                </label>
-              ))}
+                ) : null}
+                <div className="flex gap-2">
+                  <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-xl border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">
+                    {uploading ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <ImageIcon className="h-4 w-4" />
+                    )}
+                    파일 업로드
+                    <input
+                      type="file"
+                      accept="image/png,image/jpeg,image/webp"
+                      className="hidden"
+                      disabled={uploading}
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        e.target.value = "";
+                        if (file) void uploadImage(file);
+                      }}
+                    />
+                  </label>
+                  <input
+                    value={form.imageUrl ?? ""}
+                    onChange={(e) =>
+                      setForm((f) => ({ ...f, imageUrl: e.target.value }))
+                    }
+                    placeholder="또는 이미지 URL"
+                    className="min-w-0 flex-1 rounded-xl border border-slate-200 px-3 py-2 text-sm"
+                  />
+                </div>
+              </div>
+              <label className="block text-sm">
+                <span className="mb-1 block text-xs text-slate-500">정렬</span>
+                <input
+                  type="number"
+                  value={form.sortOrder}
+                  onChange={(e) =>
+                    setForm((f) => ({
+                      ...f,
+                      sortOrder: Number(e.target.value) || 0,
+                    }))
+                  }
+                  className="w-full rounded-xl border border-slate-200 px-3 py-2"
+                />
+              </label>
               <label className="flex items-center gap-2 text-sm">
                 <input
                   type="checkbox"
@@ -518,8 +632,10 @@ export function AdminBannerManager({
                 활성
               </label>
             </div>
-            {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
-            <div className="mt-4 flex justify-end gap-2">
+            {error && (
+              <p className="mt-2 px-6 text-sm text-red-600">{error}</p>
+            )}
+            <div className="mt-4 flex justify-end gap-2 px-6 pb-6">
               <button
                 type="button"
                 onClick={() => setOpen(false)}
@@ -592,13 +708,20 @@ function StatusBadge({ active }: { active: boolean }) {
 function BannerThumb({
   url,
   title,
+  circle,
 }: {
   url: string | null;
   title: string;
+  circle?: boolean;
 }) {
+  const shape = circle
+    ? "h-12 w-12 rounded-full"
+    : "h-12 w-16 rounded-lg";
   if (!url) {
     return (
-      <div className="flex h-12 w-16 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-300">
+      <div
+        className={`flex shrink-0 items-center justify-center bg-slate-100 text-slate-300 ${shape}`}
+      >
         <ImageIcon className="h-5 w-5" />
       </div>
     );
@@ -608,7 +731,7 @@ function BannerThumb({
     <img
       src={url}
       alt={title}
-      className="h-12 w-16 shrink-0 rounded-lg object-cover bg-slate-100"
+      className={`shrink-0 object-cover bg-slate-100 ${shape}`}
     />
   );
 }

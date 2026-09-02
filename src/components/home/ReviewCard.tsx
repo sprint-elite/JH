@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Flame, Star } from "lucide-react";
 import { ProductVisual } from "./ProductVisual";
+import { SITE_INFO } from "@/lib/site-info";
 
 interface ReviewCardProps {
   review: {
@@ -39,7 +40,7 @@ export function ReviewCard({ review }: ReviewCardProps) {
           {review.hot && (
             <span className="mt-1.5 inline-flex items-center gap-1 rounded-full bg-rose-50 px-2 py-0.5 text-[10px] font-bold text-rose-600">
               <Flame className="h-3 w-3" />
-              JH MAKER 리얼 후기 Hot
+              {SITE_INFO.brandName} 리얼 후기 Hot
             </span>
           )}
         </div>

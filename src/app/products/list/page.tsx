@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { ProductListPage } from "@/components/product/ProductListPage";
 import { getListCategory, parseProductListSort } from "@/lib/product-list";
 import { loadProductListPage } from "@/lib/product-list-page";
+import { SITE_INFO } from "@/lib/site-info";
 
 type PageProps = {
   searchParams: Promise<{ sort?: string; q?: string }>;
@@ -17,8 +18,8 @@ export async function generateMetadata({
 
   return {
     title: query
-      ? `"${query}" 검색 | JH MAKER`
-      : `${category.label} | JH MAKER`,
+      ? `"${query}" 검색 | ${SITE_INFO.brandName}`
+      : `${category.label} | ${SITE_INFO.brandName}`,
     description: query
       ? `${query} 관련 커스텀·기성 상품을 확인하세요.`
       : "커스텀 제작과 기성품을 둘러보세요.",

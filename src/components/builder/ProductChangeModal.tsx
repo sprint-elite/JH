@@ -76,6 +76,30 @@ function splitProductRails(
   };
 }
 
+type CategoryTab = { slug: string | null; label: string };
+
+const FALLBACK_TABS: CategoryTab[] = [
+  { slug: null, label: "전체" },
+  { slug: "tee", label: "반팔티" },
+  { slug: "polo", label: "카라티" },
+  { slug: "functional", label: "기능성" },
+  { slug: "long-sleeve", label: "긴팔티" },
+  { slug: "hoodie", label: "후드/집업" },
+  { slug: "sweatshirt", label: "맨투맨" },
+  { slug: "kids", label: "아동단체" },
+  { slug: "vest", label: "조끼" },
+  { slug: "jumper", label: "단체점퍼" },
+  { slug: "baseball", label: "야구점퍼" },
+];
+
+function matchesCategoryTab(
+  product: BuilderProductOption,
+  tab: CategoryTab,
+): boolean {
+  if (tab.slug === null) return true;
+  return product.categorySlug === tab.slug;
+}
+
 export function ProductChangeModal({
   open,
   currentSlug,
@@ -86,9 +110,12 @@ export function ProductChangeModal({
   const [products, setProducts] = useState<BuilderProductOption[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [tab, setTab] = useState<CategoryTab>(FALLBACK_TABS[0]);
+  const [tabs, setTabs] = useState<CategoryTab[]>(FALLBACK_TABS);
 
   useEffect(() => {
     if (!open) return;
+    setTab(FALLBACK_TABS[0]);
     let cancelled = false;
     setLoading(true);
     setError(null);
@@ -104,6 +131,22 @@ export function ProductChangeModal({
           throw new Error(data.error ?? "상품 목록을 불러오지 못했습니다.");
         }
         if (!cancelled) setProducts(data.products ?? []);
+        if (!cancelled) {
+          const catRes = await fetch("/api/categories");
+          if (catRes.ok) {
+            const catData = (await catRes.json()) as {
+              categories?: { slug: string | null; label: string }[];
+            };
+            if (catData.categories?.length) {
+              setTabs(
+                catData.categories.map((c) => ({
+                  slug: c.slug,
+                  label: c.label === "전체 상품" ? "전체" : c.label,
+                })),
+              );
+            }
+          }
+        }
       } catch (err) {
         if (!cancelled) {
           setError(
@@ -131,9 +174,14 @@ export function ProductChangeModal({
     return () => window.removeEventListener("keydown", onKey);
   }, [open, onClose]);
 
+  const filteredProducts = useMemo(
+    () => products.filter((p) => matchesCategoryTab(p, tab)),
+    [products, tab],
+  );
+
   const { related, recommended } = useMemo(
-    () => splitProductRails(products, currentSlug),
-    [products, currentSlug],
+    () => splitProductRails(filteredProducts, currentSlug),
+    [filteredProducts, currentSlug],
   );
 
   if (!open) return null;
@@ -162,7 +210,7 @@ export function ProductChangeModal({
             </h2>
             {mode === "select" ? (
               <p className="mt-0.5 text-xs text-zinc-500">
-                에코백 · 장바구니 · 파우치 중 골라 주세요
+                반팔티 · 카라티 · 후드 · 맨투맨 등 단체복을 골라 주세요
               </p>
             ) : null}
           </div>
@@ -173,6 +221,32 @@ export function ProductChangeModal({
           >
             <X className="h-5 w-5" />
           </button>
+        </div>
+
+        <div
+          className="flex shrink-0 gap-1 overflow-x-auto border-b border-zinc-100 bg-white px-4 py-2.5 scrollbar-hide sm:px-6"
+          role="tablist"
+          aria-label="상품 카테고리"
+        >
+          {tabs.map((t) => {
+            const active = tab.slug === t.slug;
+            return (
+              <button
+                key={t.slug ?? "all"}
+                type="button"
+                role="tab"
+                aria-selected={active}
+                onClick={() => setTab(t)}
+                className={`shrink-0 cursor-pointer rounded-full px-3.5 py-1.5 text-sm font-semibold transition ${
+                  active
+                    ? "bg-zinc-900 text-white"
+                    : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200 hover:text-zinc-900"
+                }`}
+              >
+                {t.label}
+              </button>
+            );
+          })}
         </div>
 
         <div className="min-h-0 flex-1 space-y-5 overflow-y-auto bg-gradient-to-b from-zinc-50 to-white py-4 sm:space-y-6 sm:py-5">
@@ -192,8 +266,16 @@ export function ProductChangeModal({
               선택 가능한 커스텀 상품이 없습니다.
             </p>
           )}
+          {!loading &&
+            !error &&
+            products.length > 0 &&
+            filteredProducts.length === 0 && (
+              <p className="py-16 text-center text-sm text-zinc-500">
+                이 카테고리에 표시할 상품이 없습니다.
+              </p>
+            )}
 
-          {!loading && !error && products.length > 0 && (
+          {!loading && !error && filteredProducts.length > 0 && (
             <>
               <ProductRail
                 title="관련 상품"

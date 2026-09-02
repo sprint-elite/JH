@@ -844,7 +844,7 @@ export function AdminProductManager({
                         slug: editingId ? f.slug : slugify(name),
                       }))
                     }
-                    placeholder="예: 사각 에코백"
+                    placeholder="예: 17수 라운드 반팔티"
                   />
                   <div className="grid grid-cols-2 gap-3">
                     <label className="block text-sm">

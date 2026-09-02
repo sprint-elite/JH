@@ -12,9 +12,16 @@ export type ProductListCategory = {
 /** 헤더 등 클라이언트용 기본 카테고리 (DB와 시드 동기화) */
 export const FALLBACK_PRODUCT_LIST_CATEGORIES: ProductListCategory[] = [
   { slug: null, label: "전체 상품", heading: "전체 상품" },
-  { slug: "ecobag", label: "에코백", heading: "에코백" },
-  { slug: "shopping-bag", label: "장바구니", heading: "장바구니" },
-  { slug: "pouch", label: "파우치", heading: "파우치" },
+  { slug: "tee", label: "반팔티", heading: "반팔티" },
+  { slug: "polo", label: "카라티", heading: "카라티" },
+  { slug: "functional", label: "기능성", heading: "기능성" },
+  { slug: "long-sleeve", label: "긴팔티", heading: "긴팔티" },
+  { slug: "hoodie", label: "후드/집업", heading: "후드/집업" },
+  { slug: "sweatshirt", label: "맨투맨", heading: "맨투맨" },
+  { slug: "kids", label: "아동단체", heading: "아동단체" },
+  { slug: "vest", label: "조끼", heading: "조끼" },
+  { slug: "jumper", label: "단체점퍼", heading: "단체점퍼" },
+  { slug: "baseball", label: "야구점퍼", heading: "야구점퍼" },
 ];
 
 export const PRODUCT_LIST_SORT_OPTIONS: {
