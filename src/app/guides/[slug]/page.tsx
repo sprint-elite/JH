@@ -30,6 +30,7 @@ async function loadPage(type: "GUIDE" | "IDEA", slug: string) {
       basePrice: true,
       saleType: true,
       builderType: true,
+      thumbnailUrl: true,
     },
   });
 
@@ -43,6 +44,7 @@ async function loadPage(type: "GUIDE" | "IDEA", slug: string) {
         basePrice: p.basePrice,
         saleType: p.saleType,
         productType: resolveProductType(p.builderType, p.slug),
+        thumbnailUrl: p.thumbnailUrl,
       },
     ]),
   );

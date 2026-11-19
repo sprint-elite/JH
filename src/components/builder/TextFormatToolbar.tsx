@@ -16,9 +16,10 @@ import {
 import type { DesignCanvasRef } from "./DesignCanvas";
 import type { TextStyleState } from "@/types/text-style";
 import {
-  TEXT_FONT_OPTIONS,
+  BUILDER_FONT_GROUPS,
   TEXT_SIZE_OPTIONS,
 } from "@/types/text-style";
+import { ensureBuilderFontLoaded } from "@/lib/builder-fonts";
 
 interface TextFormatToolbarProps {
   canvasRef: React.RefObject<DesignCanvasRef | null>;
@@ -65,14 +66,26 @@ export function TextFormatToolbar({
       <select
         disabled={disabled}
         value={style.fontFamily}
-        onChange={(e) => patch({ fontFamily: e.target.value })}
-        className="h-8 max-w-[130px] shrink-0 rounded border border-zinc-200 bg-white px-2 text-xs text-zinc-800 outline-none focus:border-zinc-400 disabled:opacity-30"
+        onChange={async (e) => {
+          const fontFamily = e.target.value;
+          await ensureBuilderFontLoaded(fontFamily);
+          patch({ fontFamily });
+        }}
+        className="h-8 max-w-[168px] shrink-0 rounded border border-zinc-200 bg-white px-2 text-xs text-zinc-800 outline-none focus:border-zinc-400 disabled:opacity-30"
         title="글꼴"
       >
-        {TEXT_FONT_OPTIONS.map((f) => (
-          <option key={f.value} value={f.value} style={{ fontFamily: f.value }}>
-            {f.label}
-          </option>
+        {BUILDER_FONT_GROUPS.map((group) => (
+          <optgroup key={group.label} label={group.label}>
+            {group.options.map((f) => (
+              <option
+                key={f.value}
+                value={f.value}
+                style={{ fontFamily: f.value }}
+              >
+                {f.label}
+              </option>
+            ))}
+          </optgroup>
         ))}
       </select>
 

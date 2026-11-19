@@ -9,6 +9,7 @@ import {
   toTossOrderId,
 } from "@/lib/toss";
 import { notify } from "@/lib/notify";
+import { brandedMailSubject } from "@/lib/site-settings";
 import { earnPointsForOrder } from "@/lib/points";
 import { finalizeDiscountsOnPaid } from "@/lib/order-discounts";
 import { assertApiRateLimit } from "@/lib/rate-limit";
@@ -121,7 +122,7 @@ export async function POST(request: Request) {
     void notify({
       type: "ORDER_PAID",
       toEmail: updated.user.email,
-      subject: `[JH MAKER] 결제 완료 ${updated.orderNumber}`,
+      subject: await brandedMailSubject(`결제 완료 ${updated.orderNumber}`),
       body: `주문 ${updated.orderNumber} 결제가 완료되었습니다.`,
       meta: { orderId: updated.id, amount: updated.totalPrice },
     });

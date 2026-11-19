@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db";
 import { handleApiError, jsonError } from "@/lib/api-utils";
 import { assertAuthRateLimit } from "@/lib/rate-limit";
 import { notify } from "@/lib/notify";
+import { brandedMailSubject } from "@/lib/site-settings";
 
 export async function GET() {
   try {
@@ -42,8 +43,11 @@ export async function POST(request: Request) {
     const subject = body.subject?.trim() ?? "";
     const content = body.body?.trim() ?? "";
 
-    if (!name || !email || !subject || content.length < 5) {
-      return jsonError("이름, 이메일, 제목, 내용을 입력해 주세요.", 400);
+    if (!name || !email || !subject) {
+      return jsonError("이름, 이메일, 제목을 입력해 주세요.", 400);
+    }
+    if (content.length < 5) {
+      return jsonError("문의 내용은 5자 이상 입력해 주세요.", 400);
     }
 
     const inquiry = await prisma.inquiry.create({
@@ -59,7 +63,7 @@ export async function POST(request: Request) {
     void notify({
       type: "INQUIRY",
       toEmail: email,
-      subject: `[JH MAKER] 문의 접수: ${subject}`,
+      subject: await brandedMailSubject(`문의 접수: ${subject}`),
       body: `문의가 접수되었습니다. 확인 후 답변드리겠습니다.`,
       meta: { inquiryId: inquiry.id },
     });

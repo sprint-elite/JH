@@ -502,6 +502,27 @@ model Banner {
   @@map("banners")
 }
 
+/// 메인 홈 공지 팝업
+model SitePopup {
+  id           String    @id @default(cuid())
+  title        String
+  body         String?   @db.Text
+  imageUrl     String?
+  linkUrl      String?
+  linkLabel    String?
+  isActive     Boolean   @default(true)
+  startsAt     DateTime?
+  endsAt       DateTime?
+  /// 닫기 후 다시 보지 않기 시간. 0이면 이번 방문만
+  dismissHours Int       @default(24)
+  sortOrder    Int       @default(0)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@index([isActive, sortOrder])
+  @@map("site_popups")
+}
+
 /// 홈 가이드·상황별 굿즈 소개글 (마플형 상세)
 model ContentArticle {
   id            String   @id @default(cuid())

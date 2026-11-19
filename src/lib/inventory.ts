@@ -16,26 +16,44 @@ export function assertStockAvailable(
   return null;
 }
 
+function stockError(message: string): never {
+  const err = new Error(message) as Error & { status: number };
+  err.status = 409;
+  throw err;
+}
+
+/**
+ * 기성품 재고를 원자적으로 차감한다.
+ * stockQuantity가 null이면 무제한이라 no-op.
+ * 동시 주문은 updateMany(stockQuantity >= qty)로 과판매를 막는다.
+ */
 export async function decrementStock(
   productId: string,
   quantity: number,
   tx: Db = prisma,
 ) {
+  if (quantity < 1) return;
+
+  const updated = await tx.product.updateMany({
+    where: {
+      id: productId,
+      saleType: "READYMADE",
+      stockQuantity: { gte: quantity },
+    },
+    data: { stockQuantity: { decrement: quantity } },
+  });
+  if (updated.count === 1) return;
+
   const product = await tx.product.findUnique({
     where: { id: productId },
     select: { stockQuantity: true, name: true, saleType: true },
   });
   if (!product || product.saleType !== "READYMADE") return;
   if (product.stockQuantity == null) return;
-  if (product.stockQuantity < quantity) {
-    throw new Error(
-      `${product.name}의 재고가 부족합니다. (남은 수량: ${product.stockQuantity})`,
-    );
-  }
-  await tx.product.update({
-    where: { id: productId },
-    data: { stockQuantity: { decrement: quantity } },
-  });
+
+  stockError(
+    `${product.name}의 재고가 부족합니다. (남은 수량: ${product.stockQuantity})`,
+  );
 }
 
 export async function restoreStock(
@@ -43,6 +61,7 @@ export async function restoreStock(
   quantity: number,
   tx: Db = prisma,
 ) {
+  if (quantity < 1) return;
   const product = await tx.product.findUnique({
     where: { id: productId },
     select: { stockQuantity: true, saleType: true },

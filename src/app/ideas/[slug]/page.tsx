@@ -44,6 +44,7 @@ export default async function IdeaPage({ params }: PageProps) {
         basePrice: true,
         saleType: true,
         builderType: true,
+        thumbnailUrl: true,
       },
     }),
     fetchRelatedIdeaCards(slug, 3),
@@ -59,6 +60,7 @@ export default async function IdeaPage({ params }: PageProps) {
         basePrice: p.basePrice,
         saleType: p.saleType,
         productType: resolveProductType(p.builderType, p.slug),
+        thumbnailUrl: p.thumbnailUrl,
       },
     ]),
   );

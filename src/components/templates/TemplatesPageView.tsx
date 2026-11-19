@@ -2,7 +2,6 @@ import Image from "next/image";
 import Link from "next/link";
 import { HomeFooter } from "@/components/home/HomeFooter";
 import { HomeHeader } from "@/components/home/HomeHeader";
-import { PRODUCT_DISPLAY_IMAGES } from "@/lib/home-data";
 import { formatKRW } from "@/lib/pricing";
 import type { TemplateProductCard } from "@/lib/template-collections";
 
@@ -55,26 +54,24 @@ export function TemplatesPageView({
 
                 <ul className="mt-4 grid grid-cols-3 gap-2.5 sm:gap-3">
                   {col.products.map((p) => {
-                    const img =
-                      PRODUCT_DISPLAY_IMAGES[p.productType] ?? null;
                     return (
                       <li key={`${col.id}-${p.slug}`}>
                         <Link
-                          href={`/builder?product=${encodeURIComponent(p.slug)}`}
+                          href={`/products/${encodeURIComponent(p.slug)}`}
                           className="group/item flex flex-col"
                         >
                           <div className="relative aspect-square overflow-hidden rounded-xl bg-zinc-50">
-                            {img ? (
+                            {p.thumbnailUrl ? (
                               <Image
-                                src={img}
-                                alt={p.caption ?? p.name}
+                                src={p.thumbnailUrl}
+                                alt={p.name}
                                 fill
-                                className="object-contain p-2.5 transition duration-300 group-hover/item:scale-105"
+                                className="object-contain p-2"
                                 sizes="120px"
                               />
                             ) : (
-                              <div className="flex h-full items-center justify-center px-1 text-center text-[10px] text-zinc-400">
-                                {p.name}
+                              <div className="flex h-full items-center justify-center px-2 text-center text-[11px] font-medium text-zinc-500">
+                                {p.caption ?? p.name}
                               </div>
                             )}
                           </div>

@@ -84,21 +84,21 @@ async function main() {
 
   // ── 커스텀 상품 (단체복 라인업) ──
   const teeOptionSchema = {
-    sizes: ["S", "M", "L"],
+    sizes: ["S", "M", "L", "XL", "2XL", "3XL"],
     fabrics: ["cotton10", "cotton20", "canvas", "nonwoven"],
     colors: ["white", "ivory", "cream", "beige", "mint", "navy", "black"],
     shippingFee: 3000,
   };
 
   const poloOptionSchema = {
-    sizes: ["S", "M", "L"],
+    sizes: ["S", "M", "L", "XL", "2XL", "3XL"],
     fabrics: ["cotton20", "nonwoven"],
     colors: ["white", "navy", "black", "beige"],
     shippingFee: 3000,
   };
 
   const hoodieOptionSchema = {
-    sizes: ["S", "M", "L"],
+    sizes: ["S", "M", "L", "XL", "2XL", "3XL"],
     fabrics: ["cotton20", "canvas"],
     colors: ["black", "navy", "cream", "white", "beige"],
     shippingFee: 3000,
@@ -1451,34 +1451,38 @@ async function main() {
     });
     const reviewSamples = [
       {
-        slug: "ecobag",
+        slug: "toms-085-cvt",
         rating: 5,
         content:
-          "동아리 단체티 80장 나염했는데 색이 선명하고 납기도 맞았습니다. 다음 MT도 여기서 맞출게요!",
+          "동아리 단체티 120장 085-CVT로 맞췄는데 가슴 로고 선명하고 납기도 지켜주셨어요.",
         isHot: true,
       },
       {
-        slug: "ecobag",
+        slug: "toms-300-act",
         rating: 5,
-        content: "로고 위치 걱정했는데 가슴 나염이 깔끔하게 나왔습니다. 재주문 의사 있어요.",
-        isHot: false,
-      },
-      {
-        slug: "shopping-bag",
-        rating: 5,
-        content: "매장 스태프 카라티 40장 주문했는데 쿨론이 시원하고 단가도 괜찮았습니다.",
+        content:
+          "여름 체육대회용 300-ACT 80장. 드라이 원단이라 현장 반응이 좋았습니다.",
         isHot: true,
       },
       {
-        slug: "pouch",
-        rating: 4,
-        content: "후드 등판 슬로건이 잘 나왔어요. 기모 추가하니 겨울 MT용으로 딱입니다.",
+        slug: "toms-302-adp",
+        rating: 5,
+        content:
+          "매장 스태프 폴로 302-ADP 35장. 카라 나염 위치 맞춰 주셔서 만족합니다.",
+        isHot: true,
+      },
+      {
+        slug: "toms-216-mlh",
+        rating: 5,
+        content:
+          "216-MLH 후드 30장 졸업 기념용. 색감·핏 모두 기대에 맞았어요.",
         isHot: false,
       },
     ];
 
     for (const rev of reviewSamples) {
-      const productId = products[rev.slug].id;
+      const productId = products[rev.slug]?.id;
+      if (!productId) continue;
       const exists = await prisma.productReview.findFirst({
         where: { productId, userId: customer.id, content: rev.content },
       });
@@ -1539,14 +1543,14 @@ async function main() {
       data: {
         brandName: "대지나염",
         companyName: "대지나염",
-        ceoName: "홍길동",
-        businessNumber: "000-00-00000",
-        mailOrderNumber: "제0000-서울-0000호",
+        ceoName: "김권배",
+        businessNumber: "201-01-89963",
+        mailOrderNumber: "제 2026-서울중구-1477호",
         address: "서울특별시 중구 을지로 000, 00층",
-        email: "help@daeji-nayeom.com",
-        phone: "02-0000-0000",
+        email: "poet712@naver.com",
+        phone: "010-4180-2269",
         hours: "평일 10:00 ~ 18:00 (주말·공휴일 휴무)",
-        bankAccount: "국민은행 000000-00-000000",
+        bankAccount: "",
         bankHolder: "대지나염",
         shippingFee: 3000,
         freeShippingThreshold: 50000,
@@ -1556,14 +1560,14 @@ async function main() {
       data: {
         brandName: "대지나염",
         companyName: "대지나염",
-        ceoName: "홍길동",
-        businessNumber: "000-00-00000",
-        mailOrderNumber: "제0000-서울-0000호",
+        ceoName: "김권배",
+        businessNumber: "201-01-89963",
+        mailOrderNumber: "제 2026-서울중구-1477호",
         address: "서울특별시 중구 을지로 000, 00층",
-        email: "help@daeji-nayeom.com",
-        phone: "02-0000-0000",
+        email: "poet712@naver.com",
+        phone: "010-4180-2269",
         hours: "평일 10:00 ~ 18:00 (주말·공휴일 휴무)",
-        bankAccount: "국민은행 000000-00-000000",
+        bankAccount: "",
         bankHolder: "대지나염",
         shippingFee: 3000,
         freeShippingThreshold: 50000,

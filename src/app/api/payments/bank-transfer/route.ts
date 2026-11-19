@@ -34,15 +34,38 @@ export async function POST(request: Request) {
       return jsonError("취소된 주문입니다.", 400);
     }
 
+    if (
+      order.paymentMethod === "BANK_TRANSFER" &&
+      order.paymentStatus === "UNPAID" &&
+      order.status === "AWAITING_PAYMENT"
+    ) {
+      return NextResponse.json({ order: toOrderDto(order) });
+    }
+
     const updated = await prisma.$transaction(async (tx) => {
-      await tx.payment.create({
-        data: {
+      const existingBank = await tx.payment.findFirst({
+        where: {
           orderId: order.id,
           method: "BANK_TRANSFER",
           status: "UNPAID",
-          amount: order.totalPrice,
         },
+        orderBy: { createdAt: "desc" },
       });
+      if (!existingBank) {
+        await tx.payment.create({
+          data: {
+            orderId: order.id,
+            method: "BANK_TRANSFER",
+            status: "UNPAID",
+            amount: order.totalPrice,
+          },
+        });
+      } else if (existingBank.amount !== order.totalPrice) {
+        await tx.payment.update({
+          where: { id: existingBank.id },
+          data: { amount: order.totalPrice },
+        });
+      }
 
       return tx.order.update({
         where: { id: order.id },

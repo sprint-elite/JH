@@ -3,6 +3,7 @@ import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { handleApiError, jsonError } from "@/lib/api-utils";
 import { fetchCartForUser } from "@/lib/cart";
+import { assertStockAvailable } from "@/lib/inventory";
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -26,6 +27,12 @@ export async function PATCH(request: Request, context: Ctx) {
       item.product.maxQuantity,
       Math.max(item.product.minQuantity, quantity),
     );
+    const stockErr = assertStockAvailable(
+      item.product.stockQuantity,
+      qty,
+      item.product.name,
+    );
+    if (stockErr) return jsonError(stockErr, 400);
 
     await prisma.cartItem.update({
       where: { id: item.id },

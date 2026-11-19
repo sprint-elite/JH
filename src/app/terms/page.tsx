@@ -1,18 +1,22 @@
 import type { Metadata } from "next";
 import { LegalPageShell, LegalSection } from "@/components/legal/LegalPageShell";
-import { SITE_INFO } from "@/lib/site-info";
+import { getSiteSettings } from "@/lib/site-settings";
 
-export const metadata: Metadata = {
-  title: "이용약관",
-  description: `${SITE_INFO.brandName} 서비스 이용약관`,
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const info = await getSiteSettings();
+  return {
+    title: "이용약관",
+    description: `${info.brandName} 서비스 이용약관`,
+  };
+}
 
-export default function TermsPage() {
+export default async function TermsPage() {
+  const info = await getSiteSettings();
   return (
     <LegalPageShell title="이용약관">
       <p>
-        본 약관은 {SITE_INFO.companyName}(이하 &ldquo;회사&rdquo;)가 운영하는{" "}
-        {SITE_INFO.brandName} 서비스의 이용 조건과 절차, 회사와 이용자의 권리·의무
+        본 약관은 {info.companyName}(이하 &ldquo;회사&rdquo;)가 운영하는{" "}
+        {info.brandName} 서비스의 이용 조건과 절차, 회사와 이용자의 권리·의무
         및 책임사항을 규정합니다.
       </p>
 
@@ -85,7 +89,7 @@ export default function TermsPage() {
 
       <LegalSection title="제9조 (문의)">
         <p>
-          약관 관련 문의: {SITE_INFO.email} / {SITE_INFO.phone}
+          약관 관련 문의: {info.email} / {info.phone}
         </p>
       </LegalSection>
     </LegalPageShell>

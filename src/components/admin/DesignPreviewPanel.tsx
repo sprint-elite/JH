@@ -4,11 +4,15 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { BagMockupView } from "@/components/builder/BagMockupView";
 import { createBagCanvas } from "@/lib/fabric/bag-canvas";
-import { computeMockupPlacement } from "@/lib/fabric/mockup-builder";
+import {
+  computeMockupPlacement,
+  photoMockupFromDbFace,
+} from "@/lib/fabric/mockup-builder";
 import {
   getCanvasScale,
   scaleMockupOffset,
 } from "@/lib/fabric/canvas-scale";
+import type { ProductMockupFaceDto } from "@/lib/product-mockup";
 import type { SavedBuilderPayload } from "@/types/saved-design";
 import {
   getDesignViewSides,
@@ -17,7 +21,13 @@ import {
   type ViewSide,
 } from "@/types/builder";
 
-function sidesFromPayload(payload: SavedBuilderPayload): ViewSide[] {
+function sidesFromPayload(
+  payload: SavedBuilderPayload,
+  mockupFaces: ProductMockupFaceDto[],
+): ViewSide[] {
+  if (mockupFaces.length > 0) {
+    return mockupFaces.map((f) => f.side);
+  }
   const fromDesign = Object.keys(payload.designData ?? {});
   const fromOffsets = Object.keys(payload.mockupOffsets ?? {});
   const merged = [...new Set([...fromDesign, ...fromOffsets])];
@@ -32,6 +42,7 @@ interface DesignPreviewPanelProps {
   payload: SavedBuilderPayload;
   side: ViewSide;
   onSideChange: (side: ViewSide) => void;
+  mockupFaces?: ProductMockupFaceDto[];
   annotations?: AnnotationItem[];
   highlightAnnotationId?: string | null;
 }
@@ -40,6 +51,7 @@ export function DesignPreviewPanel({
   payload,
   side,
   onSideChange,
+  mockupFaces = [],
   annotations = [],
   highlightAnnotationId,
 }: DesignPreviewPanelProps) {
@@ -57,7 +69,11 @@ export function DesignPreviewPanel({
     if (highlightAnnotationId) setShowAnnotations(true);
   }, [highlightAnnotationId]);
 
-  const sides = sidesFromPayload(payload);
+  const sides = useMemo(
+    () => sidesFromPayload(payload, mockupFaces),
+    [payload, mockupFaces],
+  );
+
   const mockupOffset = payload.mockupOffsets[side];
   const designJson = payload.designData[side];
   const scaledMockupOffset = useMemo(() => {
@@ -69,22 +85,49 @@ export function DesignPreviewPanel({
     designJson,
     dims.w,
     dims.h,
-    mockupOffset.x,
-    mockupOffset.y,
+    mockupOffset?.x,
+    mockupOffset?.y,
   ]);
 
   const mockupKey = `${payload.options.productType}-${payload.options.size}-${payload.options.fabric}-${payload.options.bagColor}-${payload.options.handleStrapColor}-${payload.options.handle}-${payload.options.pocket}-${side}`;
 
+  const dbFace = useMemo(
+    () => mockupFaces.find((f) => f.side === side) ?? null,
+    [mockupFaces, side],
+  );
+
+  const uniformDbPhotos = useMemo(() => {
+    if (mockupFaces.length < 2) return null;
+    return mockupFaces.map((f) =>
+      photoMockupFromDbFace(f, payload.options.productType, f.side),
+    );
+  }, [mockupFaces, payload.options.productType]);
+
   const placement = useMemo(() => {
     if (dims.w < 100 || dims.h < 100) return null;
+    const photoOverride = dbFace
+      ? photoMockupFromDbFace(dbFace, payload.options.productType, side)
+      : null;
     return computeMockupPlacement(
       dims.w,
       dims.h,
       payload.options,
       side,
       scaledMockupOffset,
+      photoOverride,
+      uniformDbPhotos,
     );
-  }, [dims.w, dims.h, payload.options, side, mockupKey, scaledMockupOffset.x, scaledMockupOffset.y]);
+  }, [
+    dims.w,
+    dims.h,
+    payload.options,
+    side,
+    mockupKey,
+    scaledMockupOffset.x,
+    scaledMockupOffset.y,
+    dbFace,
+    uniformDbPhotos,
+  ]);
 
   useEffect(() => {
     const container = wrapperRef.current;
@@ -103,7 +146,7 @@ export function DesignPreviewPanel({
     return () => ro.disconnect();
   }, []);
 
-  const fabricMountKey = `${dims.w}x${dims.h}`;
+  const fabricMountKey = `${dims.w}x${dims.h}-${dbFace?.imageUrl ?? ""}-${dbFace?.printX ?? ""}-${side}`;
 
   useEffect(() => {
     const el = canvasElRef.current;
@@ -113,7 +156,32 @@ export function DesignPreviewPanel({
     setReady(false);
     setError(null);
 
-    createBagCanvas(el, dims.w, dims.h, payload.options, side)
+    createBagCanvas(
+      el,
+      dims.w,
+      dims.h,
+      payload.options,
+      side,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      (viewSide) => {
+        const face = mockupFaces.find((f) => f.side === viewSide);
+        if (!face) return null;
+        return photoMockupFromDbFace(
+          face,
+          payload.options.productType,
+          viewSide,
+        );
+      },
+      () => {
+        if (mockupFaces.length < 2) return null;
+        return mockupFaces.map((f) =>
+          photoMockupFromDbFace(f, payload.options.productType, f.side),
+        );
+      },
+    )
       .then(async ({ canvas, handle }) => {
         if (cancelled) {
           handle.dispose();
@@ -147,13 +215,21 @@ export function DesignPreviewPanel({
       handleRef.current = null;
       setReady(false);
     };
-  }, [fabricMountKey]);
+  }, [fabricMountKey, mockupFaces, payload.options]);
 
   useEffect(() => {
     if (!handleRef.current || !ready) return;
     handleRef.current.updateMockup(payload.options, side, scaledMockupOffset);
     void handleRef.current.importJson(designJson);
-  }, [side, designJson, ready, scaledMockupOffset.x, scaledMockupOffset.y, payload.options, mockupKey]);
+  }, [
+    side,
+    designJson,
+    ready,
+    scaledMockupOffset.x,
+    scaledMockupOffset.y,
+    payload.options,
+    mockupKey,
+  ]);
 
   const visiblePins = annotations.filter((a) => a.side === side);
   const showMockup =
@@ -174,7 +250,7 @@ export function DesignPreviewPanel({
                   : "bg-slate-100 text-slate-600 hover:bg-slate-200"
               }`}
             >
-              {resolveSideLabel(s)}
+              {resolveSideLabel(s, mockupFaces)}
             </button>
           ))}
         </div>
@@ -193,7 +269,7 @@ export function DesignPreviewPanel({
 
       <div
         ref={wrapperRef}
-        className="relative min-h-[320px] flex-1 bg-[#f0f2f5]"
+        className="relative min-h-[320px] flex-1 bg-[#d8d8de]"
       >
         <div className="pointer-events-none absolute inset-0 z-0" aria-hidden>
           {showMockup && placement && (
@@ -239,7 +315,7 @@ export function DesignPreviewPanel({
         )}
 
         {!ready && !error && dims.w > 0 && (
-          <div className="absolute inset-0 z-20 flex items-center justify-center bg-[#f0f2f5]/80 text-sm text-slate-500">
+          <div className="absolute inset-0 z-20 flex items-center justify-center bg-[#d8d8de]/80 text-sm text-slate-500">
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             작업물 로딩 중…
           </div>

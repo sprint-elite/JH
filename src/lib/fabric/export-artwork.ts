@@ -6,7 +6,7 @@ import type {
 } from "@/types/builder";
 import { resolveSideLabel } from "@/types/builder";
 import { createBagCanvas, type TaggedObject } from "./bag-canvas";
-import { computeMockupPlacement } from "./mockup-builder";
+import { computeMockupPlacement, type PhotoMockup } from "./mockup-builder";
 import {
   getPrintExportPixelSize,
   PRINT_EXPORT_DPI,
@@ -42,6 +42,7 @@ export async function renderArtworkPng(
   side: ViewSide,
   mockupOffset: MockupOffset,
   meta?: { orderNumber?: string },
+  photoOverride?: PhotoMockup | null,
 ): Promise<ArtworkExportResult | null> {
   if (!hasDesignObjects(designJson)) return null;
 
@@ -53,12 +54,20 @@ export async function renderArtworkPng(
       : 700;
 
   const el = document.createElement("canvas");
+  const getPhotoOverride = photoOverride
+    ? (viewSide: ViewSide) => (viewSide === side ? photoOverride : null)
+    : undefined;
   const { canvas, handle } = await createBagCanvas(
     el,
     refW,
     refH,
     options,
     side,
+    undefined,
+    undefined,
+    undefined,
+    undefined,
+    getPhotoOverride,
   );
 
   try {
@@ -79,6 +88,7 @@ export async function renderArtworkPng(
       options,
       side,
       mockupOffset,
+      photoOverride ?? null,
     );
     const print = placement.printArea;
     if (print.width < 1 || print.height < 1) return null;
@@ -86,7 +96,7 @@ export async function renderArtworkPng(
     const pixelSize = getPrintExportPixelSize(options);
     const multiplier = pixelSize.width / print.width;
 
-    const dataUrl = canvas.toDataURL({
+    const rawDataUrl = canvas.toDataURL({
       format: "png",
       left: print.left,
       top: print.top,
@@ -95,6 +105,10 @@ export async function renderArtworkPng(
       multiplier,
       enableRetinaScaling: false,
     });
+    const { fillInteriorHolesInDataUrl } = await import(
+      "@/lib/image/fill-interior-holes"
+    );
+    const dataUrl = await fillInteriorHolesInDataUrl(rawDataUrl);
 
     const blob = await dataUrlToBlob(dataUrl);
     const sideSlug =

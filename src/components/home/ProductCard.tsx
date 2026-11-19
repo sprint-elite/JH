@@ -43,6 +43,10 @@ export function ProductCard({
   const href = hrefOverride ?? `/products/${item.slug}`;
   const imageSrc = item.thumbnailUrl || PRODUCT_DISPLAY_IMAGES[item.productType];
   const hasPhoto = Boolean(imageSrc);
+  const soldOut =
+    item.saleType === "READYMADE" &&
+    item.stockQuantity != null &&
+    item.stockQuantity <= 0;
 
   if (variant === "circle") {
     return (
@@ -76,6 +80,11 @@ export function ProductCard({
               </div>
             )}
           </div>
+          {soldOut ? (
+            <span className="absolute bottom-1 left-1/2 -translate-x-1/2 rounded-full bg-zinc-900/85 px-2 py-0.5 text-[10px] font-bold text-white">
+              품절
+            </span>
+          ) : null}
         </div>
 
         <p className="mt-2.5 w-full truncate px-0.5 text-center text-[11px] font-semibold leading-none text-zinc-800">
@@ -117,7 +126,15 @@ export function ProductCard({
           </div>
         )}
 
-        {variant !== "shop" && (
+        {soldOut ? (
+          <div className="absolute inset-0 flex items-center justify-center bg-white/55">
+            <span className="rounded-full bg-zinc-900 px-3 py-1 text-xs font-bold text-white">
+              품절
+            </span>
+          </div>
+        ) : null}
+
+        {variant !== "shop" && !soldOut && (
           <div className="absolute inset-x-0 bottom-0 translate-y-full bg-zinc-900/90 px-3 py-3 text-center text-xs font-semibold text-white transition-transform duration-200 group-hover:translate-y-0 sm:text-sm">
             {item.saleType === "READYMADE"
               ? "기성품 구매하기"

@@ -9,6 +9,7 @@ export type ProductSearchHit = {
   shortDesc: string | null;
   thumbnailUrl: string | null;
   basePrice: number;
+  minQuantity: number;
   categoryName: string | null;
   productType: ProductType;
 };
@@ -43,6 +44,7 @@ export async function searchProducts(
       shortDesc: true,
       thumbnailUrl: true,
       basePrice: true,
+      minQuantity: true,
       builderType: true,
       category: { select: { name: true } },
     },
@@ -55,6 +57,7 @@ export async function searchProducts(
     shortDesc: p.shortDesc,
     thumbnailUrl: p.thumbnailUrl,
     basePrice: p.basePrice,
+    minQuantity: p.minQuantity,
     categoryName: p.category?.name ?? null,
     productType: resolveProductType(p.builderType, p.slug),
   }));

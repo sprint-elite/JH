@@ -99,6 +99,7 @@ export async function GET(request: Request) {
             emailVerifiedAt: byEmail.emailVerifiedAt ?? now,
             termsAgreedAt: byEmail.termsAgreedAt ?? now,
             privacyAgreedAt: byEmail.privacyAgreedAt ?? now,
+            isGuest: false,
           },
         });
       } else if (byEmail?.deletedAt) {

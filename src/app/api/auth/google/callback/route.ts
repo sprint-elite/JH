@@ -98,6 +98,7 @@ export async function GET(request: Request) {
             termsAgreedAt: byEmail.termsAgreedAt ?? now,
             privacyAgreedAt: byEmail.privacyAgreedAt ?? now,
             deletedAt: null,
+            isGuest: false,
           },
         });
       } else if (byEmail?.deletedAt) {

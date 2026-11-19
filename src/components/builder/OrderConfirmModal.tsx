@@ -38,8 +38,12 @@ interface OrderConfirmModalProps {
   open: boolean;
   data: OrderConfirmData | null;
   submitting?: boolean;
+  needEmail?: boolean;
   onClose: () => void;
-  onConfirm: (shipping: OrderShippingInput) => void | Promise<void>;
+  onConfirm: (
+    shipping: OrderShippingInput,
+    extra?: { email?: string },
+  ) => void | Promise<void>;
 }
 
 const EMPTY_SHIPPING: OrderShippingInput = {
@@ -54,10 +58,12 @@ export function OrderConfirmModal({
   open,
   data,
   submitting,
+  needEmail,
   onClose,
   onConfirm,
 }: OrderConfirmModalProps) {
   const [form, setForm] = useState<OrderShippingInput>(EMPTY_SHIPPING);
+  const [email, setEmail] = useState("");
   const [error, setError] = useState<string | null>(null);
 
   const price = useMemo(
@@ -80,6 +86,7 @@ export function OrderConfirmModal({
         shippingZip: data.initialShipping?.shippingZip ?? "",
         notes: data.initialShipping?.notes ?? "",
       });
+      setEmail("");
       setError(null);
     }
   }, [open, data]);
@@ -91,6 +98,7 @@ export function OrderConfirmModal({
   const handleClose = () => {
     if (submitting) return;
     setForm(EMPTY_SHIPPING);
+    setEmail("");
     setError(null);
     onClose();
   };
@@ -101,13 +109,23 @@ export function OrderConfirmModal({
       setError(validationError);
       return;
     }
-    void onConfirm({
-      shippingName: form.shippingName.trim(),
-      shippingPhone: form.shippingPhone.trim(),
-      shippingAddress: form.shippingAddress.trim(),
-      shippingZip: form.shippingZip?.trim() || "",
-      notes: form.notes?.trim() || "",
-    });
+    if (needEmail) {
+      const trimmed = email.trim();
+      if (!trimmed || !trimmed.includes("@")) {
+        setError("비회원 주문 시 이메일을 입력해 주세요.");
+        return;
+      }
+    }
+    void onConfirm(
+      {
+        shippingName: form.shippingName.trim(),
+        shippingPhone: form.shippingPhone.trim(),
+        shippingAddress: form.shippingAddress.trim(),
+        shippingZip: form.shippingZip?.trim() || "",
+        notes: form.notes?.trim() || "",
+      },
+      needEmail ? { email: email.trim().toLowerCase() } : undefined,
+    );
   };
 
   return (
@@ -179,6 +197,22 @@ export function OrderConfirmModal({
 
           <div className="space-y-3 border-t border-zinc-100 pt-4">
             <p className="text-sm font-semibold text-zinc-900">배송 · 연락 정보</p>
+            {needEmail ? (
+              <label className="block text-sm">
+                <span className="font-medium text-zinc-800">주문 이메일</span>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => {
+                    setEmail(e.target.value);
+                    setError(null);
+                  }}
+                  disabled={submitting}
+                  placeholder="주문 조회에 사용됩니다"
+                  className="mt-1.5 h-10 w-full rounded-lg border border-zinc-200 px-3 text-sm outline-none focus:border-rose-300 disabled:bg-zinc-50"
+                />
+              </label>
+            ) : null}
             <ShippingAddressFields
               value={form}
               onChange={(next) => {

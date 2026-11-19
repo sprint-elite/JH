@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { HomePage } from "@/components/home/HomePage";
 import { fetchHomeCatalog } from "@/lib/catalog";
+import { fetchActiveHomePopup } from "@/lib/site-popup";
 import { getSiteUrl } from "@/lib/site-url";
 
 export const dynamic = "force-dynamic";
@@ -23,6 +24,9 @@ export const metadata: Metadata = {
 };
 
 export default async function Home() {
-  const catalog = await fetchHomeCatalog();
-  return <HomePage catalog={catalog} />;
+  const [catalog, popup] = await Promise.all([
+    fetchHomeCatalog(),
+    fetchActiveHomePopup(),
+  ]);
+  return <HomePage catalog={catalog} popup={popup} />;
 }

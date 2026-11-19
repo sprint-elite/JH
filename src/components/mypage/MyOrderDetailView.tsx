@@ -6,7 +6,7 @@ import { useState } from "react";
 import { ExternalLink, Loader2 } from "lucide-react";
 import { ORDER_STATUS_LABELS } from "@/lib/order-status";
 import { PAYMENT_STATUS_LABELS } from "@/lib/payment-status";
-import { SITE_INFO } from "@/lib/site-info";
+import { useSiteSettings } from "@/hooks/useSiteSettings";
 import {
   formatTrackingDisplay,
   trackingLookupUrl,
@@ -40,6 +40,7 @@ export function MyOrderDetailView({ order: initial }: MyOrderDetailViewProps) {
   const [order, setOrder] = useState(initial);
   const [cancelling, setCancelling] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const info = useSiteSettings();
 
   const builderHref = `/builder?product=${order.productSlug}&order=${order.id}`;
   const canOpenBuilder = order.saleType === "CUSTOM";
@@ -192,12 +193,12 @@ export function MyOrderDetailView({ order: initial }: MyOrderDetailViewProps) {
             결제하기
           </Link>
           <ul className="mt-4 space-y-1 font-medium">
-            <li>무통장 계좌: {SITE_INFO.bankAccount}</li>
-            <li>예금주: {SITE_INFO.bankHolder}</li>
+            <li>무통장 계좌: {info.bankAccount}</li>
+            <li>예금주: {info.bankHolder}</li>
             <li>입금자명: 주문자명과 동일하게 입력해 주세요</li>
           </ul>
           <p className="mt-3 text-amber-800/80">
-            문의: {SITE_INFO.email} · {SITE_INFO.phone}
+            문의: {info.email} · {info.phone}
           </p>
         </section>
       ) : null}

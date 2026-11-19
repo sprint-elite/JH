@@ -31,7 +31,13 @@ export async function GET(request: Request) {
         saleType: true,
         builderType: true,
         isFeatured: true,
-        category: { select: { name: true, slug: true } },
+        category: {
+          select: {
+            name: true,
+            slug: true,
+            parent: { select: { slug: true } },
+          },
+        },
       },
     });
 
@@ -47,6 +53,7 @@ export async function GET(request: Request) {
       productType: resolveProductType(p.builderType, p.slug),
       categoryName: p.category?.name ?? null,
       categorySlug: p.category?.slug ?? null,
+      categoryParentSlug: p.category?.parent?.slug ?? null,
     }));
 
     return NextResponse.json({ products });

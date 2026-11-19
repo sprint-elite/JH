@@ -1,6 +1,7 @@
 "use client";
 
 import { usePathname } from "next/navigation";
+import { ChatWidget } from "@/components/chat/ChatWidget";
 import { AppHeader } from "./AppHeader";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
@@ -26,6 +27,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     pathname.startsWith("/faq") ||
     pathname.startsWith("/returns");
 
+  const showChat = !isAdmin && !isBuilder;
+
   if (
     isBuilder ||
     isProductStudio ||
@@ -37,13 +40,19 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     isCart ||
     isStorefront
   ) {
-    return <>{children}</>;
+    return (
+      <>
+        {children}
+        {showChat ? <ChatWidget /> : null}
+      </>
+    );
   }
 
   return (
     <>
       <AppHeader />
       {children}
+      {showChat ? <ChatWidget /> : null}
     </>
   );
 }

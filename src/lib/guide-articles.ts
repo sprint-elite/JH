@@ -60,10 +60,10 @@ export const GUIDE_ARTICLES: GuideArticle[] = [
         ],
         productsTitle: "형태별 추천 상품",
         products: [
-          { slug: "ecobag", caption: "17수 라운드 · 1장부터" },
-          { slug: "ecobag-round", caption: "기능성 반팔" },
-          { slug: "shopping-bag", caption: "쿨론 카라티" },
-          { slug: "pouch", caption: "특양면 후드" },
+          { slug: "toms-085-cvt", caption: "17수 라운드 · 1장부터" },
+          { slug: "toms-300-act", caption: "기능성 반팔" },
+          { slug: "toms-302-adp", caption: "쿨론 카라티" },
+          { slug: "toms-216-mlh", caption: "특양면 후드" },
         ],
       },
       {
@@ -82,8 +82,8 @@ export const GUIDE_ARTICLES: GuideArticle[] = [
         ],
         productsTitle: "바로 제작 시작",
         products: [
-          { slug: "ecobag", caption: "빌더로 디자인" },
-          { slug: "ready-ecobag-basic", caption: "기성 · 무인쇄" },
+          { slug: "toms-085-cvt", caption: "빌더로 디자인" },
+          { slug: "toms-085-cvt", caption: "기성 · 무인쇄" },
         ],
       },
       {
@@ -143,10 +143,10 @@ export const GUIDE_ARTICLES: GuideArticle[] = [
         ],
         productsTitle: "유니폼 추천 상품",
         products: [
-          { slug: "shopping-bag", caption: "쿨론 카라티" },
-          { slug: "shopping-bag-wide", caption: "20수 카라티" },
-          { slug: "ecobag", caption: "17수 라운드" },
-          { slug: "pouch-cube", caption: "후드집업" },
+          { slug: "toms-302-adp", caption: "쿨론 카라티" },
+          { slug: "toms-330-avp", caption: "20수 카라티" },
+          { slug: "toms-085-cvt", caption: "17수 라운드" },
+          { slug: "toms-208-naz", caption: "후드집업" },
         ],
       },
       {
@@ -195,10 +195,10 @@ export const GUIDE_ARTICLES: GuideArticle[] = [
         ],
         productsTitle: "행사 추천",
         products: [
-          { slug: "ecobag", caption: "17수 라운드" },
-          { slug: "ecobag-round", caption: "기능성 반팔" },
-          { slug: "ecobag-mini", caption: "아동·키즈" },
-          { slug: "shopping-bag", caption: "스태프 카라티" },
+          { slug: "toms-085-cvt", caption: "17수 라운드" },
+          { slug: "toms-300-act", caption: "기능성 반팔" },
+          { slug: "toms-083-bbt", caption: "아동·키즈" },
+          { slug: "toms-302-adp", caption: "스태프 카라티" },
         ],
       },
       {
@@ -262,9 +262,9 @@ export const GUIDE_ARTICLES: GuideArticle[] = [
         ],
         productsTitle: "연습용으로 추천",
         products: [
-          { slug: "ecobag", caption: "등판 슬로건" },
-          { slug: "shopping-bag", caption: "좌가슴 로고" },
-          { slug: "pouch", caption: "후드 등판" },
+          { slug: "toms-085-cvt", caption: "등판 슬로건" },
+          { slug: "toms-302-adp", caption: "좌가슴 로고" },
+          { slug: "toms-216-mlh", caption: "후드 등판" },
         ],
       },
     ],

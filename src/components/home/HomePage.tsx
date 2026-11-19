@@ -10,10 +10,22 @@ import { HomeCircleNav } from "./HomeCircleNav";
 import { QuickTemplateCard } from "./QuickTemplateCard";
 import { ThemeBestSection } from "./ThemeBestSection";
 import type { HomeCatalogDto } from "@/lib/catalog";
-import { GUIDE_CARDS, IDEA_BANNERS } from "@/lib/home-data";
+import type { HomePopupDto } from "@/lib/site-popup";
+import { HomePopup } from "./HomePopup";
+import {
+  GUIDE_CARDS,
+  IDEA_BANNERS,
+  REVIEWS,
+  SHOW_HOME_NEW_SECTION,
+  SHOW_HOME_TRENDING_SECTION,
+  SHOW_HOME_REVIEWS_SECTION,
+} from "@/lib/home-data";
+import { ProductRowSlider } from "./ProductRowSlider";
+import { ReviewSlider } from "./ReviewSlider";
 
 interface HomePageProps {
   catalog: HomeCatalogDto;
+  popup?: HomePopupDto | null;
 }
 
 const FALLBACK_IDEA_GRADIENTS = [
@@ -101,8 +113,12 @@ function IdeasSection({
   );
 }
 
-export function HomePage({ catalog }: HomePageProps) {
-  const { banners, circleNav, best, templates, allProducts } = catalog;
+export function HomePage({ catalog, popup }: HomePageProps) {
+  const { banners, circleNav, best, templates, allProducts, newArrivals, trending } =
+    catalog;
+
+  const reviews =
+    catalog.reviews.length > 0 ? catalog.reviews : [...REVIEWS];
 
   const ideas =
     catalog.ideas.length > 0
@@ -156,7 +172,8 @@ export function HomePage({ catalog }: HomePageProps) {
           <section id="templates" className="bg-white py-10 sm:py-14">
             <div className="mx-auto max-w-7xl px-4 sm:px-6">
               <SectionHeader
-                title="2분컷, 이렇게 시작해 보세요"
+                title="2분컷, 품번으로 바로 시작"
+                subtitle="상황별 추천 — 품번 고르고 나염만 맞추면 됩니다"
                 href="/templates"
                 linkLabel="전체 보기"
               />
@@ -172,6 +189,52 @@ export function HomePage({ catalog }: HomePageProps) {
         {ideas.length > 0 ? <IdeasSection ideas={ideas} /> : null}
 
         <ThemeBestSection products={allProducts.length ? allProducts : best} />
+
+        {SHOW_HOME_NEW_SECTION && newArrivals.length > 0 ? (
+          <section id="new" className="bg-zinc-50 py-10 sm:py-14">
+            <div className="mx-auto max-w-7xl px-4 sm:px-6">
+              <SectionHeader
+                title="신상품"
+                subtitle="새로 들어온 단체티"
+                href="/products/list"
+                linkLabel="전체 보기"
+              />
+              <div className="mt-6">
+                <ProductRowSlider items={newArrivals} />
+              </div>
+            </div>
+          </section>
+        ) : null}
+
+        {SHOW_HOME_TRENDING_SECTION && trending.length > 0 ? (
+          <section id="trending" className="bg-white py-10 sm:py-14">
+            <div className="mx-auto max-w-7xl px-4 sm:px-6">
+              <SectionHeader
+                title="지금 많이 찾는"
+                subtitle="반팔티 · 카라티 · 후드"
+                href="/products/list"
+                linkLabel="전체 보기"
+              />
+              <div className="mt-6">
+                <ProductRowSlider items={trending} />
+              </div>
+            </div>
+          </section>
+        ) : null}
+
+        {SHOW_HOME_REVIEWS_SECTION && reviews.length > 0 ? (
+          <section id="reviews" className="bg-zinc-50 py-10 sm:py-14">
+            <div className="mx-auto max-w-7xl px-4 sm:px-6">
+              <SectionHeader
+                title="구매 후기"
+                subtitle="단체 나염 · 실제 주문 후기"
+              />
+              <div className="mt-6">
+                <ReviewSlider reviews={reviews} />
+              </div>
+            </div>
+          </section>
+        ) : null}
 
         <section
           id="guides"
@@ -238,6 +301,7 @@ export function HomePage({ catalog }: HomePageProps) {
       </main>
 
       <HomeFooter />
+      {popup ? <HomePopup popup={popup} /> : null}
     </div>
   );
 }

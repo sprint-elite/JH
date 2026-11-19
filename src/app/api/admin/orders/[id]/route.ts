@@ -8,6 +8,8 @@ import { toOrderDto } from "@/lib/orders";
 import { earnPointsForOrder } from "@/lib/points";
 import { finalizeDiscountsOnPaid } from "@/lib/order-discounts";
 import { notify } from "@/lib/notify";
+import { brandedMailSubject } from "@/lib/site-settings";
+import { restoreStock } from "@/lib/inventory";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -27,7 +29,10 @@ export async function PATCH(request: Request, context: RouteContext) {
       trackingNumber?: string | null;
     };
 
-    const existing = await prisma.order.findUnique({ where: { id } });
+    const existing = await prisma.order.findUnique({
+      where: { id },
+      include: { items: { select: { productId: true, quantity: true } } },
+    });
     if (!existing) return jsonError("주문을 찾을 수 없습니다.", 404);
 
     const data: {
@@ -80,10 +85,22 @@ export async function PATCH(request: Request, context: RouteContext) {
       }
     }
 
-    const order = await prisma.order.update({
-      where: { id },
-      data,
-      include: orderInclude,
+    const releasingStock =
+      (data.status === "CANCELLED" || data.paymentStatus === "REFUNDED") &&
+      existing.status !== "CANCELLED" &&
+      existing.paymentStatus !== "REFUNDED";
+
+    const order = await prisma.$transaction(async (tx) => {
+      if (releasingStock) {
+        for (const item of existing.items) {
+          await restoreStock(item.productId, item.quantity, tx);
+        }
+      }
+      return tx.order.update({
+        where: { id },
+        data,
+        include: orderInclude,
+      });
     });
 
     const becamePaid =
@@ -131,7 +148,7 @@ export async function PATCH(request: Request, context: RouteContext) {
       void notify({
         type: "ORDER_PAID",
         toEmail: order.user.email,
-        subject: `[JH MAKER] 입금 확인 ${order.orderNumber}`,
+        subject: await brandedMailSubject(`입금 확인 ${order.orderNumber}`),
         body: `주문 ${order.orderNumber} 입금이 확인되었습니다.`,
         meta: { orderId: order.id },
       });
@@ -145,7 +162,7 @@ export async function PATCH(request: Request, context: RouteContext) {
       void notify({
         type: "ORDER_SHIPPED",
         toEmail: order.user.email,
-        subject: `[JH MAKER] 배송 시작 ${order.orderNumber}`,
+        subject: await brandedMailSubject(`배송 시작 ${order.orderNumber}`),
         body: `주문 ${order.orderNumber}이(가) 배송되었습니다. 송장: ${order.trackingNumber ?? "-"}`,
         meta: { orderId: order.id },
       });

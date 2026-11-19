@@ -91,7 +91,7 @@ export function ProductExtrasOptions() {
 
       {bagShapes && bagShapes.length > 0 && (
         <div>
-          <p className="mb-2 text-sm font-semibold text-zinc-800">에코백 형태</p>
+          <p className="mb-2 text-sm font-semibold text-zinc-800">형태</p>
           <select
             value={options.bagShape}
             onChange={(e) =>

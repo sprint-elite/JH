@@ -17,7 +17,7 @@ export const productCanvasConfigs: Record<string, ProductCanvasConfig> = {
     width: 400,
     height: 400,
     backgroundColor: "#f5f0e8",
-    label: "에코백 앞면",
+    label: "반팔티 앞면",
   },
   "prod-003": {
     width: 280,

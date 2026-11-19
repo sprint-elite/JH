@@ -18,6 +18,7 @@ export type BuilderProductOption = {
   productType: ProductType;
   categoryName: string | null;
   categorySlug?: string | null;
+  categoryParentSlug?: string | null;
   isFeatured?: boolean;
 };
 
@@ -80,16 +81,13 @@ type CategoryTab = { slug: string | null; label: string };
 
 const FALLBACK_TABS: CategoryTab[] = [
   { slug: null, label: "전체" },
-  { slug: "tee", label: "반팔티" },
-  { slug: "polo", label: "카라티" },
-  { slug: "functional", label: "기능성" },
-  { slug: "long-sleeve", label: "긴팔티" },
-  { slug: "hoodie", label: "후드/집업" },
-  { slug: "sweatshirt", label: "맨투맨" },
-  { slug: "kids", label: "아동단체" },
+  { slug: "tshirt", label: "티셔츠" },
+  { slug: "kids", label: "아동" },
+  { slug: "hood-mtm", label: "후드맨투맨" },
+  { slug: "windbreaker", label: "바람막이점퍼" },
   { slug: "vest", label: "조끼" },
-  { slug: "jumper", label: "단체점퍼" },
-  { slug: "baseball", label: "야구점퍼" },
+  { slug: "brand-t", label: "브랜드T" },
+  { slug: "goods", label: "하의·잡화" },
 ];
 
 function matchesCategoryTab(
@@ -97,7 +95,10 @@ function matchesCategoryTab(
   tab: CategoryTab,
 ): boolean {
   if (tab.slug === null) return true;
-  return product.categorySlug === tab.slug;
+  return (
+    product.categorySlug === tab.slug ||
+    product.categoryParentSlug === tab.slug
+  );
 }
 
 export function ProductChangeModal({
@@ -456,9 +457,10 @@ function ProductRail({
         onPointerMove={onPointerMove}
         onPointerUp={endDrag}
         onPointerCancel={endDrag}
-        className="flex cursor-grab snap-x snap-mandatory gap-3 overflow-x-auto scroll-smooth px-5 pb-0.5 select-none scrollbar-hide sm:gap-3.5 sm:px-6"
+        className="cursor-grab overflow-x-auto scroll-smooth pb-1 select-none scrollbar-hide"
         style={{ WebkitOverflowScrolling: "touch" }}
       >
+        <div className="flex w-max min-w-full gap-3 px-5 sm:gap-3.5 sm:px-6">
         {products.map((p) => {
           const active = p.slug === currentSlug;
           const imageSrc =
@@ -468,7 +470,7 @@ function ProductRail({
               key={`${title}-${p.id}`}
               data-slug={p.slug}
               data-product-card
-              className="w-[42%] max-w-[148px] shrink-0 snap-start sm:w-[140px]"
+              className="w-[136px] shrink-0 sm:w-[140px]"
             >
               <button
                 type="button"
@@ -527,7 +529,7 @@ function ProductRail({
             </article>
           );
         })}
-        <div className="w-1 shrink-0" aria-hidden />
+        </div>
       </div>
     </section>
   );

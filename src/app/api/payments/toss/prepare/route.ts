@@ -8,6 +8,7 @@ import {
   toTossOrderId,
 } from "@/lib/toss";
 import { assertApiRateLimit } from "@/lib/rate-limit";
+import { getSiteSettings } from "@/lib/site-settings";
 
 export async function POST(request: Request) {
   try {
@@ -53,8 +54,11 @@ export async function POST(request: Request) {
       data: { status: "AWAITING_PAYMENT" },
     });
 
+    const settings = await getSiteSettings();
     const productName =
-      order.items[0]?.productName ?? order.product.name ?? "JH MAKER 주문";
+      order.items[0]?.productName ??
+      order.product.name ??
+      `${settings.brandName} 주문`;
     const customerKey = user.id.replace(/[^a-zA-Z0-9\-_=.@]/g, "").slice(0, 50);
 
     return NextResponse.json({

@@ -61,5 +61,10 @@ export async function saveSiteSettings(
   return next;
 }
 
+export async function brandedMailSubject(rest: string): Promise<string> {
+  const { brandName } = await getSiteSettings();
+  return `[${brandName}] ${rest}`;
+}
+
 /** 동기 폴백용 — 푸터 등에서 await 없이 쓸 때 SITE_INFO 유지 */
 export { SITE_INFO };

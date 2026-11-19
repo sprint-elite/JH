@@ -84,6 +84,14 @@ export const DesignCanvas = forwardRef<DesignCanvasRef, DesignCanvasProps>(
       return faces.find((f) => f.side === side) ?? null;
     }, [productContext?.mockupFaces, side]);
 
+    const uniformDbPhotos = useMemo(() => {
+      const faces = productContext?.mockupFaces ?? [];
+      if (faces.length < 2) return null;
+      return faces.map((f) =>
+        photoMockupFromDbFace(f, options.productType, f.side),
+      );
+    }, [productContext?.mockupFaces, options.productType]);
+
     const placement = useMemo(() => {
       if (dims.w < 100 || dims.h < 100) return null;
       const { scaleX, scaleY } = getCanvasScale(designJson, dims.w, dims.h);
@@ -98,6 +106,7 @@ export const DesignCanvas = forwardRef<DesignCanvasRef, DesignCanvasProps>(
         side,
         offset,
         photoOverride,
+        uniformDbPhotos,
       );
     }, [
       dims.w,
@@ -109,6 +118,7 @@ export const DesignCanvas = forwardRef<DesignCanvasRef, DesignCanvasProps>(
       mockupOffset.y,
       designJson,
       dbFace,
+      uniformDbPhotos,
     ]);
 
     useImperativeHandle(ref, () => ({
@@ -119,6 +129,9 @@ export const DesignCanvas = forwardRef<DesignCanvasRef, DesignCanvasProps>(
       addText: (text?: string) => handleRef.current?.addText(text),
       addImageFromFile: async (file: File) => {
         await handleRef.current?.addImageFromFile(file);
+      },
+      addImageFromDataUrl: async (dataUrl, opts) => {
+        await handleRef.current?.addImageFromDataUrl(dataUrl, opts);
       },
       deleteSelected: () => handleRef.current?.deleteSelected(),
       bringForward: () => handleRef.current?.bringForward(),
@@ -210,6 +223,17 @@ export const DesignCanvas = forwardRef<DesignCanvasRef, DesignCanvasProps>(
             face,
             optionsRef.current.productType,
             viewSide,
+          );
+        },
+        () => {
+          const faces = productContext?.mockupFaces ?? [];
+          if (faces.length < 2) return null;
+          return faces.map((f) =>
+            photoMockupFromDbFace(
+              f,
+              optionsRef.current.productType,
+              f.side,
+            ),
           );
         },
       )
@@ -316,7 +340,7 @@ export const DesignCanvas = forwardRef<DesignCanvasRef, DesignCanvasProps>(
           const y = (e.clientY - rect.top) / rect.height;
           onAnnotationPlace(x, y);
         }}
-        className={`relative h-full min-h-0 w-full overflow-visible bg-[#f5f5f5] outline-none ${
+        className={`relative h-full min-h-0 w-full overflow-visible bg-[#d8d8de] outline-none ${
           annotationMode ? "cursor-crosshair" : ""
         }`}
       >
@@ -353,7 +377,7 @@ export const DesignCanvas = forwardRef<DesignCanvasRef, DesignCanvasProps>(
         )}
 
         {!ready && !error && dims.w > 0 && (
-          <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center bg-[#f5f5f5]/80 text-sm text-zinc-500">
+          <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center bg-[#d8d8de]/80 text-sm text-zinc-500">
             캔버스 로딩 중…
           </div>
         )}

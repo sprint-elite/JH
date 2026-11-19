@@ -5,8 +5,10 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { loadTossPayments, ANONYMOUS } from "@tosspayments/tosspayments-sdk";
 import { Loader2 } from "lucide-react";
-import { SITE_INFO } from "@/lib/site-info";
+import { useSiteSettings } from "@/hooks/useSiteSettings";
 import { formatKRW } from "@/lib/pricing";
+
+type CheckoutPayMethod = "toss" | "bank";
 
 type PreparePayload = {
   clientKey: string;
@@ -48,6 +50,8 @@ export function TossCheckoutClient({
   bankHolder,
 }: TossCheckoutClientProps) {
   const router = useRouter();
+  const info = useSiteSettings();
+  const [payMethod, setPayMethod] = useState<CheckoutPayMethod>("toss");
   const [ready, setReady] = useState(false);
   const [paying, setPaying] = useState(false);
   const [bankBusy, setBankBusy] = useState(false);
@@ -106,9 +110,16 @@ export function TossCheckoutClient({
   };
 
   useEffect(() => {
+    if (payMethod !== "toss") {
+      setReady(false);
+      widgetsRef.current = null;
+      preparedRef.current = null;
+      return;
+    }
     let cancelled = false;
     void (async () => {
       try {
+        setError(null);
         await reinitWidgets();
       } catch (err) {
         if (!cancelled) {
@@ -122,7 +133,7 @@ export function TossCheckoutClient({
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [orderId]);
+  }, [orderId, payMethod]);
 
   const applyDiscounts = async () => {
     setDiscountBusy(true);
@@ -156,13 +167,25 @@ export function TossCheckoutClient({
       if (typeof data.pointsBalance === "number") {
         setPointsBalance(data.pointsBalance);
       }
-      await reinitWidgets();
+      if (payMethod === "toss") {
+        await reinitWidgets();
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "할인 적용 실패");
     } finally {
       setDiscountBusy(false);
     }
   };
+
+  const selectPayMethod = (next: CheckoutPayMethod) => {
+    if (next === payMethod) return;
+    setPayMethod(next);
+    setError(null);
+    setPaying(false);
+  };
+
+  const accountNo = bankAccount || info.bankAccount;
+  const accountHolder = bankHolder || info.bankHolder;
 
   const handlePay = async () => {
     const widgets = widgetsRef.current;
@@ -298,40 +321,98 @@ export function TossCheckoutClient({
       </section>
 
       <section className="rounded-2xl border border-zinc-200 bg-white p-5">
-        <h2 className="text-sm font-bold text-zinc-900">토스페이먼츠</h2>
-        {!ready && !error ? (
-          <div className="flex items-center gap-2 py-10 text-sm text-zinc-500">
-            <Loader2 className="h-4 w-4 animate-spin" />
-            결제수단 불러오는 중…
-          </div>
-        ) : null}
-        <div id="toss-payment-methods" className="mt-3 min-h-[120px]" />
-        <div id="toss-agreement" className="mt-3" />
-        <button
-          type="button"
-          onClick={() => void handlePay()}
-          disabled={!ready || paying || bankBusy || discountBusy}
-          className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-zinc-900 px-4 py-3 text-sm font-semibold text-white hover:bg-zinc-800 disabled:opacity-50"
-        >
-          {paying ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-          {formatKRW(totalPrice)} 결제하기
-        </button>
-      </section>
+        <h2 className="text-sm font-bold text-zinc-900">결제 수단</h2>
+        <div className="mt-3 grid grid-cols-2 gap-2">
+          <button
+            type="button"
+            disabled={paying || bankBusy || discountBusy}
+            onClick={() => selectPayMethod("toss")}
+            className={`rounded-xl border px-3 py-3 text-left text-sm transition-colors disabled:opacity-50 ${
+              payMethod === "toss"
+                ? "border-zinc-900 bg-zinc-900 text-white"
+                : "border-zinc-200 bg-white text-zinc-800 hover:border-zinc-300"
+            }`}
+          >
+            <span className="block font-semibold">카드 · 간편결제</span>
+            <span
+              className={`mt-0.5 block text-xs ${
+                payMethod === "toss" ? "text-zinc-300" : "text-zinc-500"
+              }`}
+            >
+              토스페이먼츠
+            </span>
+          </button>
+          <button
+            type="button"
+            disabled={paying || bankBusy || discountBusy}
+            onClick={() => selectPayMethod("bank")}
+            className={`rounded-xl border px-3 py-3 text-left text-sm transition-colors disabled:opacity-50 ${
+              payMethod === "bank"
+                ? "border-zinc-900 bg-zinc-900 text-white"
+                : "border-zinc-200 bg-white text-zinc-800 hover:border-zinc-300"
+            }`}
+          >
+            <span className="block font-semibold">무통장 입금</span>
+            <span
+              className={`mt-0.5 block text-xs ${
+                payMethod === "bank" ? "text-zinc-300" : "text-zinc-500"
+              }`}
+            >
+              계좌이체 후 확인
+            </span>
+          </button>
+        </div>
 
-      <section className="rounded-2xl border border-zinc-200 bg-zinc-50 p-5">
-        <h2 className="text-sm font-bold text-zinc-900">무통장 입금</h2>
-        <p className="mt-2 text-sm leading-relaxed text-zinc-600">
-          계좌: {bankAccount || SITE_INFO.bankAccount} / 예금주{" "}
-          {bankHolder || SITE_INFO.bankHolder}
-        </p>
-        <button
-          type="button"
-          onClick={() => void handleBankTransfer()}
-          disabled={paying || bankBusy || discountBusy}
-          className="mt-4 w-full rounded-xl border border-zinc-300 bg-white px-4 py-3 text-sm font-semibold text-zinc-800 hover:bg-zinc-100 disabled:opacity-50"
-        >
-          {bankBusy ? "처리 중…" : "무통장으로 주문 확정"}
-        </button>
+        {payMethod === "toss" ? (
+          <div className="mt-5 border-t border-zinc-100 pt-5">
+            {!ready && !error ? (
+              <div className="flex items-center gap-2 py-10 text-sm text-zinc-500">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                결제 UI 불러오는 중…
+              </div>
+            ) : null}
+            <div id="toss-payment-methods" className="min-h-[120px]" />
+            <div id="toss-agreement" className="mt-3" />
+            <button
+              type="button"
+              onClick={() => void handlePay()}
+              disabled={!ready || paying || bankBusy || discountBusy}
+              className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-zinc-900 px-4 py-3 text-sm font-semibold text-white hover:bg-zinc-800 disabled:opacity-50"
+            >
+              {paying ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+              {formatKRW(totalPrice)} 결제하기
+            </button>
+          </div>
+        ) : (
+          <div className="mt-5 space-y-3 border-t border-zinc-100 pt-5 text-sm text-zinc-600">
+            <p className="leading-relaxed">
+              아래 계좌로 <strong className="text-zinc-900">{formatKRW(totalPrice)}</strong>
+              을 입금해 주세요. 입금 확인 후 제작이 시작됩니다.
+            </p>
+            <ul className="space-y-1 rounded-xl bg-zinc-50 px-4 py-3 font-medium text-zinc-800">
+              <li>입금 계좌: {accountNo || "관리자 설정 필요"}</li>
+              <li>예금주: {accountHolder || "—"}</li>
+              <li>
+                입금자명: 주문자명(
+                {shippingName || preparedRef.current?.customerName || "주문 시 입력한 이름"}
+                )과 동일하게
+              </li>
+              <li>
+                주문번호:{" "}
+                <span className="font-mono">{orderNumber}</span> (메모에 적어 주세요)
+              </li>
+            </ul>
+            <button
+              type="button"
+              onClick={() => void handleBankTransfer()}
+              disabled={paying || bankBusy || discountBusy || !accountNo}
+              className="flex w-full items-center justify-center gap-2 rounded-xl border border-zinc-300 bg-white px-4 py-3 text-sm font-semibold text-zinc-800 hover:bg-zinc-100 disabled:opacity-50"
+            >
+              {bankBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+              {bankBusy ? "처리 중…" : "무통장 입금으로 주문 확정"}
+            </button>
+          </div>
+        )}
       </section>
 
       {error ? (

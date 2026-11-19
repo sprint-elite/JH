@@ -22,6 +22,13 @@ export async function loadProductListPage(
   for (const c of categories) {
     counts[c.slug] = c._count.products;
   }
+  // 하위 카테고리 상품 수를 상위 카테고리에 합산
+  for (const c of categories) {
+    const parentSlug = c.parent?.slug;
+    if (parentSlug) {
+      counts[parentSlug] = (counts[parentSlug] ?? 0) + c._count.products;
+    }
+  }
 
   return { products, sort, counts, listCategories };
 }

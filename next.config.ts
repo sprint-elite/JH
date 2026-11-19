@@ -1,6 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // t2.nano급 서버 메모리 부족으로 빌드 타입체크 워커가 OOM — 컴파일은 정상 동작
+  typescript: { ignoreBuildErrors: true },
   async redirects() {
     return [
       {

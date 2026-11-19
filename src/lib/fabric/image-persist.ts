@@ -36,7 +36,37 @@ function isImageObjectRecord(obj: unknown): obj is Record<string, unknown> {
   return type === "image" || type === "Image";
 }
 
-/** blob: 임시 URL을 data URL로 치환 (주문·디자인 저장용) */
+const DATA_URL_UPLOAD_MIN = 12_000;
+
+export async function persistDesignImageSrc(src: string): Promise<string> {
+  let next = src;
+  if (next.startsWith("blob:")) {
+    next = await blobUrlToDataUrl(next);
+  }
+  if (typeof window === "undefined") return next;
+  if (!next.startsWith("data:") || next.length < DATA_URL_UPLOAD_MIN) return next;
+
+  const blob = await (await fetch(next)).blob();
+  const mime = blob.type || "image/png";
+  const ext = mime.includes("jpeg") || mime.includes("jpg")
+    ? "jpg"
+    : mime.includes("webp")
+      ? "webp"
+      : "png";
+  const form = new FormData();
+  form.append("file", blob, `design.${ext}`);
+  const res = await fetch("/api/uploads/design-image", {
+    method: "POST",
+    body: form,
+  });
+  const data = (await res.json()) as { url?: string; error?: string };
+  if (!res.ok || !data.url) {
+    throw new Error(data.error ?? "이미지를 저장하지 못했습니다.");
+  }
+  return data.url;
+}
+
+/** blob:/큰 data URL을 서버 파일로 바꿔 주문 JSON이 용량 한도를 넘지 않게 함 */
 export async function embedImagesInDesignJson(
   json: Record<string, unknown> | null,
 ): Promise<Record<string, unknown> | null> {
@@ -47,18 +77,19 @@ export async function embedImagesInDesignJson(
     json.objects.map(async (obj) => {
       if (!isImageObjectRecord(obj)) return obj;
       const src = obj.src;
-      if (typeof src !== "string" || src.startsWith("data:")) return obj;
-
-      if (src.startsWith("blob:")) {
-        try {
-          const dataUrl = await blobUrlToDataUrl(src);
-          return { ...obj, src: dataUrl };
-        } catch {
-          return obj;
-        }
+      if (typeof src !== "string") return obj;
+      if (
+        src.startsWith("/uploads/") ||
+        src.startsWith("http://") ||
+        src.startsWith("https://")
+      ) {
+        return obj;
       }
-
-      return obj;
+      try {
+        return { ...obj, src: await persistDesignImageSrc(src) };
+      } catch {
+        return obj;
+      }
     }),
   );
 
@@ -68,11 +99,10 @@ export async function embedImagesInDesignJson(
 export async function embedImagesInDesignState(
   designData: DesignState,
 ): Promise<DesignState> {
-  const sides = ["front", "back", "side"] as const;
   const next = { ...designData };
 
   await Promise.all(
-    sides.map(async (side) => {
+    Object.keys(designData).map(async (side) => {
       const raw = designData[side];
       if (!raw) return;
       next[side] = (await embedImagesInDesignJson(raw)) as DesignJson;

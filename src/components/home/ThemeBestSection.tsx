@@ -11,32 +11,31 @@ const THEMES: {
   label: string;
   match: (p: CatalogProductDto) => boolean;
 }[] = [
-  { id: "kids", label: "아동", match: (p) => p.categorySlug === "kids" },
   { id: "featured", label: "인기", match: (p) => p.isFeatured },
-  { id: "tee", label: "반팔티", match: (p) => p.categorySlug === "tee" },
+  {
+    id: "tshirts",
+    label: "티셔츠",
+    match: (p) => p.categorySlug === "01-tshirts",
+  },
+  {
+    id: "dry",
+    label: "드라이",
+    match: (p) => p.categorySlug === "02-dry-mesh",
+  },
   {
     id: "polo",
-    label: "카라티",
-    match: (p) => p.categorySlug === "polo",
+    label: "폴로",
+    match: (p) => p.categorySlug === "03-polo",
   },
   {
-    id: "work",
-    label: "근무복",
-    match: (p) =>
-      p.categorySlug === "polo" ||
-      p.categorySlug === "vest" ||
-      p.categorySlug === "functional",
+    id: "sweat",
+    label: "스웨트",
+    match: (p) => p.categorySlug === "04-sweat",
   },
   {
-    id: "sport",
-    label: "스포츠",
-    match: (p) => p.categorySlug === "functional",
-  },
-  {
-    id: "hoodie",
-    label: "후드",
-    match: (p) =>
-      p.categorySlug === "hoodie" || p.categorySlug === "sweatshirt",
+    id: "others",
+    label: "기타",
+    match: (p) => p.categorySlug === "05-others",
   },
 ];
 

@@ -1,13 +1,16 @@
+import Image from "next/image";
 import Link from "next/link";
 import { Flame, Star } from "lucide-react";
 import { ProductVisual } from "./ProductVisual";
-import { SITE_INFO } from "@/lib/site-info";
+import { useSiteSettings } from "@/hooks/useSiteSettings";
 
 interface ReviewCardProps {
   review: {
     user: string;
     date: string;
     product: string;
+    productSlug?: string;
+    productThumbnailUrl?: string | null;
     productType: import("@/types/builder").ProductType;
     productColor: string;
     rating: number;
@@ -19,16 +22,29 @@ interface ReviewCardProps {
 }
 
 export function ReviewCard({ review }: ReviewCardProps) {
-  const moreHref = review.href ?? "/builder";
+  const moreHref = review.href ?? "/products/list";
+  const { brandName } = useSiteSettings();
+  const thumb = review.productThumbnailUrl;
+
   return (
     <article className="flex flex-col overflow-hidden rounded-2xl border border-zinc-200 bg-white">
       <div className="flex gap-4 p-4">
-        <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-xl bg-zinc-50">
-          <ProductVisual
-            productType={review.productType}
-            color={review.productColor}
-            size="sm"
-          />
+        <div className="relative flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-zinc-50">
+          {thumb ? (
+            <Image
+              src={thumb}
+              alt={review.product}
+              fill
+              className="object-contain p-1"
+              sizes="80px"
+            />
+          ) : (
+            <ProductVisual
+              productType={review.productType}
+              color={review.productColor}
+              size="sm"
+            />
+          )}
         </div>
         <div className="min-w-0 flex-1">
           <p className="text-[11px] font-medium text-zinc-400">
@@ -40,7 +56,7 @@ export function ReviewCard({ review }: ReviewCardProps) {
           {review.hot && (
             <span className="mt-1.5 inline-flex items-center gap-1 rounded-full bg-rose-50 px-2 py-0.5 text-[10px] font-bold text-rose-600">
               <Flame className="h-3 w-3" />
-              {SITE_INFO.brandName} 리얼 후기 Hot
+              {brandName} 리얼 후기 Hot
             </span>
           )}
         </div>

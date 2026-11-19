@@ -17,11 +17,17 @@ import {
   TrendingUp,
   Truck,
   Users,
+  RotateCcw,
+  Timer,
 } from "lucide-react";
 import { OrderDetailModal } from "@/components/admin/OrderDetailModal";
 import { OrderStatusBadge } from "@/components/orders/OrderStatusBadge";
 import { PaymentStatusBadge } from "@/components/orders/PaymentStatusBadge";
 import type { AdminDashboardData } from "@/lib/admin-dashboard";
+import {
+  normalizeMesLeadTimeMonthly,
+  normalizeMesReworkMonthly,
+} from "@/lib/admin-dashboard-charts";
 import { ORDER_STATUS_LABELS } from "@/lib/order-status";
 import { PAYMENT_STATUS_LABELS } from "@/lib/payment-status";
 import type { Order } from "@/types";
@@ -74,9 +80,490 @@ function todoReason(order: Order): string {
   return "처리 필요";
 }
 
+function formatHours(h: number) {
+  if (h >= 48) {
+    const days = Math.floor(h / 24);
+    const rem = Math.round(h % 24);
+    return rem > 0 ? `${days}일 ${rem}시간` : `${days}일`;
+  }
+  return `${h.toFixed(1)}시간`;
+}
+
+function niceCountAxisMax(max: number) {
+  if (max <= 1) return 1;
+  if (max <= 5) return max;
+  const step = max <= 10 ? 2 : max <= 20 ? 5 : max <= 50 ? 10 : 20;
+  return Math.ceil(max / step) * step;
+}
+
+function countAxisTicks(max: number) {
+  const top = niceCountAxisMax(max);
+  const mid = Math.round(top / 2);
+  return top === 1 ? [0, 1] : [0, mid, top];
+}
+
+function hoursAxisTicks(maxVal: number, referenceHours: number) {
+  const top = Math.max(
+    niceCountAxisMax(Math.ceil(maxVal)),
+    referenceHours,
+  );
+  const ticks = new Set<number>([0]);
+  if (referenceHours <= top) ticks.add(referenceHours);
+  ticks.add(top);
+  const mid = Math.round(top / 2);
+  if (mid > 0 && mid < top) ticks.add(mid);
+  return [...ticks].sort((a, b) => a - b);
+}
+
+/** viewBox 가로를 넓게 → w-full + meet 시 카드 가로를 거의 채움 */
+const MES_CHART_LAYOUT = {
+  w: 640,
+  h: 220,
+  pad: { top: 16, right: 10, bottom: 42, left: 36 },
+} as const;
+
+function mesMonthX(
+  index: number,
+  count: number,
+  padLeft: number,
+  innerW: number,
+) {
+  const slotW = innerW / count;
+  return padLeft + slotW * index + slotW / 2;
+}
+
+function MesReworkMonthlyChart({
+  points,
+}: {
+  points: AdminDashboardData["mesKpi"]["reworkMonthly"];
+}) {
+  const series = useMemo(() => normalizeMesReworkMonthly(points), [points]);
+  const rawMax = Math.max(
+    ...series.map((p) => Math.max(p.totalWorkOrders, p.commentWorkOrders)),
+    1,
+  );
+  const yMax = niceCountAxisMax(rawMax);
+  const yTicks = countAxisTicks(rawMax);
+
+  const { w, h, pad } = MES_CHART_LAYOUT;
+  const innerW = w - pad.left - pad.right;
+  const innerH = h - pad.top - pad.bottom;
+  const baseY = pad.top + innerH;
+  const yFor = (v: number) => pad.top + innerH - (v / yMax) * innerH;
+  const n = series.length;
+  const slotW = innerW / n;
+  const barW = Math.min(22, Math.max(10, slotW * 0.22));
+
+  return (
+    <div className="mt-4 border-t border-slate-100 pt-4">
+      <div className="mb-2 flex items-center justify-between gap-2">
+        <p className="text-[11px] font-medium text-slate-500">최근 6개월</p>
+        <div className="flex flex-wrap items-center gap-3 text-[10px] text-slate-500">
+          <span className="inline-flex items-center gap-1">
+            <span className="h-2 w-2 rounded-sm bg-slate-300" />
+            작업건수
+          </span>
+          <span className="inline-flex items-center gap-1">
+            <span className="h-2 w-2 rounded-sm bg-amber-400" />
+            고객 코멘트
+          </span>
+        </div>
+      </div>
+      <div className="-mx-1 sm:-mx-2">
+      <svg
+        viewBox={`0 0 ${w} ${h}`}
+        className="block h-[220px] w-full"
+        role="img"
+        aria-label="월별 재작업 작업건수"
+      >
+        {yTicks.map((tick) => {
+          const y = yFor(tick);
+          return (
+            <g key={`y-${tick}`}>
+              <line
+                x1={pad.left}
+                y1={y}
+                x2={w - pad.right}
+                y2={y}
+                stroke="#e2e8f0"
+                strokeWidth={1}
+              />
+              <text
+                x={pad.left - 8}
+                y={y + 3}
+                textAnchor="end"
+                fill="#64748b"
+                fontSize={11}
+              >
+                {tick}
+              </text>
+            </g>
+          );
+        })}
+        <line
+          x1={pad.left}
+          y1={baseY}
+          x2={w - pad.right}
+          y2={baseY}
+          stroke="#94a3b8"
+          strokeWidth={1}
+        />
+        <text
+          x={pad.left - 8}
+          y={pad.top + 4}
+          textAnchor="end"
+          fill="#94a3b8"
+          fontSize={9}
+        >
+          건
+        </text>
+        {series.map((m, i) => {
+          const cx = mesMonthX(i, n, pad.left, innerW);
+          const gap = 3;
+          const pairW = barW * 2 + gap;
+          const xTotal = cx - pairW / 2;
+          const xComment = xTotal + barW + gap;
+          const hTotal = (m.totalWorkOrders / yMax) * innerH;
+          const hComment = (m.commentWorkOrders / yMax) * innerH;
+          return (
+            <g key={m.monthKey}>
+              <rect
+                x={xTotal}
+                y={baseY - hTotal}
+                width={barW}
+                height={Math.max(hTotal, 0)}
+                rx={2}
+                fill="#cbd5e1"
+              />
+              <rect
+                x={xComment}
+                y={baseY - hComment}
+                width={barW}
+                height={Math.max(hComment, 0)}
+                rx={2}
+                fill="#fbbf24"
+              />
+              {m.totalWorkOrders > 0 ? (
+                <text
+                  x={xTotal + barW / 2}
+                  y={baseY - hTotal - 5}
+                  textAnchor="middle"
+                  fill="#475569"
+                  fontSize={10}
+                  fontWeight="bold"
+                >
+                  {m.totalWorkOrders}
+                </text>
+              ) : null}
+              {m.commentWorkOrders > 0 ? (
+                <text
+                  x={xComment + barW / 2}
+                  y={baseY - hComment - 5}
+                  textAnchor="middle"
+                  fill="#b45309"
+                  fontSize={10}
+                  fontWeight="bold"
+                >
+                  {m.commentWorkOrders}
+                </text>
+              ) : null}
+              <text
+                x={cx}
+                y={h - 12}
+                textAnchor="middle"
+                fill="#475569"
+                fontSize={11}
+              >
+                {m.label}
+              </text>
+            </g>
+          );
+        })}
+      </svg>
+      </div>
+    </div>
+  );
+}
+
+function MesLeadTimeMonthlyChart({
+  points,
+  referenceHours,
+}: {
+  points: AdminDashboardData["mesKpi"]["leadTimeMonthly"];
+  referenceHours: number;
+}) {
+  const series = useMemo(() => normalizeMesLeadTimeMonthly(points), [points]);
+  const dataMax = Math.max(...series.map((p) => p.avgLeadTimeHours), 1);
+  const yMax = Math.max(niceCountAxisMax(Math.ceil(dataMax)), referenceHours);
+  const yTicks = hoursAxisTicks(dataMax, referenceHours);
+
+  const { w, h, pad } = MES_CHART_LAYOUT;
+  const innerW = w - pad.left - pad.right;
+  const innerH = h - pad.top - pad.bottom;
+  const baseY = pad.top + innerH;
+
+  const yFor = (hours: number) =>
+    pad.top + innerH - (hours / yMax) * innerH;
+
+  const refY = yFor(referenceHours);
+
+  const n = series.length;
+
+  const linePoints = series
+    .map((p, i) => {
+      const x = mesMonthX(i, n, pad.left, innerW);
+      const y = yFor(p.avgLeadTimeHours);
+      return `${x},${y}`;
+    })
+    .join(" ");
+
+  return (
+    <div className="mt-4 border-t border-slate-100 pt-4">
+      <div className="mb-2 flex items-center justify-between gap-2">
+        <p className="text-[11px] font-medium text-slate-500">
+          월별 평균 리드타임(시간)
+        </p>
+        <p className="text-[10px] text-slate-400">
+          점선 {referenceHours}h (7일)
+        </p>
+      </div>
+      <div className="-mx-1 sm:-mx-2">
+      <svg
+        viewBox={`0 0 ${w} ${h}`}
+        className="block h-[220px] w-full text-slate-500"
+        role="img"
+        aria-label="월별 수주 출하 리드타임"
+      >
+        {yTicks.map((tick) => {
+          const y = yFor(tick);
+          return (
+            <g key={`y-${tick}`}>
+              <line
+                x1={pad.left}
+                y1={y}
+                x2={w - pad.right}
+                y2={y}
+                stroke="#e2e8f0"
+                strokeWidth={1}
+              />
+              <text
+                x={pad.left - 8}
+                y={y + 3}
+                textAnchor="end"
+                fill="#64748b"
+                fontSize={11}
+              >
+                {tick}
+              </text>
+            </g>
+          );
+        })}
+        <line
+          x1={pad.left}
+          y1={baseY}
+          x2={w - pad.right}
+          y2={baseY}
+          stroke="#94a3b8"
+          strokeWidth={1}
+        />
+        <text
+          x={pad.left - 8}
+          y={pad.top + 4}
+          textAnchor="end"
+          fill="#94a3b8"
+          fontSize={9}
+        >
+          h
+        </text>
+        <line
+          x1={pad.left}
+          y1={refY}
+          x2={w - pad.right}
+          y2={refY}
+          stroke="#64748b"
+          strokeOpacity={0.45}
+          strokeWidth={1}
+          strokeDasharray="5 4"
+        />
+        <text
+          x={w - pad.right}
+          y={Math.max(pad.top + 10, refY - 5)}
+          textAnchor="end"
+          fill="#64748b"
+          fontSize={9}
+        >
+          {referenceHours}h
+        </text>
+        {linePoints ? (
+          <polyline
+            fill="none"
+            stroke="#0ea5e9"
+            strokeWidth={2.5}
+            strokeLinejoin="round"
+            strokeLinecap="round"
+            points={linePoints}
+          />
+        ) : null}
+        {series.map((p, i) => {
+          const x = mesMonthX(i, n, pad.left, innerW);
+          const y = yFor(p.avgLeadTimeHours);
+          const hasData = p.sampleCount > 0;
+          const label =
+            p.avgLeadTimeHours >= 48
+              ? formatHours(p.avgLeadTimeHours)
+              : `${p.avgLeadTimeHours}h`;
+          return (
+            <g key={p.monthKey}>
+              {hasData ? (
+                <text
+                  x={x}
+                  y={Math.max(pad.top + 10, y - 8)}
+                  textAnchor="middle"
+                  fill="#0369a1"
+                  fontSize={10}
+                  fontWeight="bold"
+                >
+                  {label}
+                </text>
+              ) : null}
+              <circle
+                cx={x}
+                cy={y}
+                r={hasData ? 4 : 2.5}
+                fill={hasData ? "#0ea5e9" : "#cbd5e1"}
+                stroke="#fff"
+                strokeWidth={1.5}
+              >
+                <title>
+                  {p.label}:{" "}
+                  {hasData
+                    ? `${formatHours(p.avgLeadTimeHours)} (${p.sampleCount}건)`
+                    : "0시간 (0건)"}
+                </title>
+              </circle>
+              <text
+                x={x}
+                y={h - 12}
+                textAnchor="middle"
+                fill="#475569"
+                fontSize={11}
+              >
+                {p.label}
+              </text>
+            </g>
+          );
+        })}
+      </svg>
+      </div>
+    </div>
+  );
+}
+
+function MesKpiSection({ mesKpi }: { mesKpi: AdminDashboardData["mesKpi"] }) {
+  const reworkDisplay =
+    mesKpi.reworkRatePercent != null
+      ? `${mesKpi.reworkRatePercent}%`
+      : "—";
+  const reworkSub = `${mesKpi.reworkOrderCount}건 / ${mesKpi.totalWorkOrderCount}건 (고객 코멘트)`;
+  const leadDisplay =
+    mesKpi.avgLeadTimeHours != null
+      ? formatHours(mesKpi.avgLeadTimeHours)
+      : "—";
+  const leadSub =
+    mesKpi.leadTimeSampleCount > 0
+      ? `배송 중 전환 ${mesKpi.leadTimeSampleCount}건 평균 · 주문 접수 → 배송 중`
+      : "배송 중으로 변경된 주문이 없습니다";
+
+  const reworkOk =
+    mesKpi.reworkRatePercent != null &&
+    mesKpi.reworkRatePercent <= mesKpi.targetReworkRatePercent;
+  const leadOk =
+    mesKpi.avgLeadTimeHours != null &&
+    mesKpi.avgLeadTimeHours <= mesKpi.targetLeadTimeHours;
+
+  return (
+    <div className="mb-6 grid gap-4 md:grid-cols-2">
+      <div className="rounded-2xl border border-slate-200/70 bg-white p-5 shadow-sm">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <p className="text-xs font-medium text-slate-500">재작업률</p>
+            <p className="mt-2 text-3xl font-bold tabular-nums tracking-tight text-slate-900">
+              {reworkDisplay}
+            </p>
+            <p className="mt-1 text-xs text-slate-500">{reworkSub}</p>
+          </div>
+          <span
+            className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${
+              reworkOk
+                ? "bg-emerald-50 text-emerald-600"
+                : "bg-amber-50 text-amber-600"
+            }`}
+          >
+            <RotateCcw className="h-5 w-5" />
+          </span>
+        </div>
+        <MesReworkMonthlyChart points={mesKpi.reworkMonthly} />
+        <p className="mt-4 border-t border-slate-100 pt-3 text-xs text-slate-500">
+          구축 목표{" "}
+          <span className="font-semibold text-slate-800">
+            {mesKpi.targetReworkRatePercent}% 이하
+          </span>
+          {mesKpi.reworkRatePercent != null ? (
+            <span
+              className={`ml-2 font-medium ${reworkOk ? "text-emerald-600" : "text-amber-600"}`}
+            >
+              {reworkOk ? "목표 달성" : "목표 초과"}
+            </span>
+          ) : null}
+        </p>
+      </div>
+
+      <div className="rounded-2xl border border-slate-200/70 bg-white p-5 shadow-sm">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <p className="text-xs font-medium text-slate-500">
+              수주 출하 리드타임
+            </p>
+            <p className="mt-2 text-3xl font-bold tabular-nums tracking-tight text-slate-900">
+              {leadDisplay}
+            </p>
+            <p className="mt-1 text-xs text-slate-500">{leadSub}</p>
+          </div>
+          <span
+            className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${
+              leadOk
+                ? "bg-emerald-50 text-emerald-600"
+                : "bg-sky-50 text-sky-600"
+            }`}
+          >
+            <Timer className="h-5 w-5" />
+          </span>
+        </div>
+        <MesLeadTimeMonthlyChart
+          points={mesKpi.leadTimeMonthly}
+          referenceHours={mesKpi.leadTimeReferenceHours}
+        />
+        <p className="mt-4 border-t border-slate-100 pt-3 text-xs text-slate-500">
+          구축 목표{" "}
+          <span className="font-semibold text-slate-800">
+            {mesKpi.targetLeadTimeHours}시간 이하
+          </span>
+          {mesKpi.avgLeadTimeHours != null ? (
+            <span
+              className={`ml-2 font-medium ${leadOk ? "text-emerald-600" : "text-sky-600"}`}
+            >
+              {leadOk ? "목표 달성" : "목표 초과"}
+            </span>
+          ) : null}
+        </p>
+      </div>
+    </div>
+  );
+}
+
 export function AdminDashboard({ data }: AdminDashboardProps) {
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
-  const { summary, statusBreakdown, paymentBreakdown, dailyTrend, todoOrders, recentOrders, topProducts } =
+  const { summary, statusBreakdown, paymentBreakdown, dailyTrend, todoOrders, recentOrders, topProducts, mesKpi } =
     data;
 
   const maxTrendRevenue = useMemo(
@@ -166,6 +653,8 @@ export function AdminDashboard({ data }: AdminDashboardProps) {
           <QuickLink href="/" icon={ArrowUpRight} label="스토어 보기" external />
         </div>
       </div>
+
+      <MesKpiSection mesKpi={mesKpi} />
 
       <div className="mb-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
         {kpiCards.map((card) => {

@@ -2,7 +2,17 @@
 export type ViewSide = string;
 
 export type ProductType = "ecobag" | "shopping-bag" | "pouch";
-export type SizeOption = "S" | "M" | "L";
+export type SizeOption = "S" | "M" | "L" | "XL" | "2XL" | "3XL";
+
+/** 커스텀·단체 의류 기본 사이즈 라인업 */
+export const DEFAULT_APPAREL_SIZES: SizeOption[] = [
+  "S",
+  "M",
+  "L",
+  "XL",
+  "2XL",
+  "3XL",
+];
 export type FabricOption = "cotton10" | "cotton20" | "canvas" | "nonwoven";
 export type BagColorOption =
   | "cream"
@@ -131,12 +141,27 @@ export const SIZE_LABELS: Record<SizeOption, string> = {
   S: "S (90)",
   M: "M (95)",
   L: "L (100)",
+  XL: "XL (105)",
+  "2XL": "2XL (110)",
+  "3XL": "3XL (115)",
 };
 
 export const SIZE_DIMENSIONS: Record<SizeOption, { w: number; h: number }> = {
   S: { w: 20, h: 24 },
   M: { w: 22, h: 26 },
   L: { w: 26, h: 30 },
+  XL: { w: 28, h: 32 },
+  "2XL": { w: 30, h: 34 },
+  "3XL": { w: 32, h: 36 },
+};
+
+const SIZE_MOCKUP_SCALE: Record<SizeOption, number> = {
+  S: 0.88,
+  M: 1,
+  L: 1.1,
+  XL: 1.14,
+  "2XL": 1.18,
+  "3XL": 1.22,
 };
 
 /** 인쇄 영역 실측 (cm) — M 사이즈 기준 */
@@ -146,7 +171,7 @@ export const PRINT_AREA_CM = { w: 17, h: 20 } as const;
 export const PRINT_AREA_REFERENCE_CM = { w: 22, h: 26 } as const;
 
 export function bagSizeScale(size: SizeOption): number {
-  return size === "S" ? 0.88 : size === "L" ? 1.1 : 1;
+  return SIZE_MOCKUP_SCALE[size];
 }
 
 export const BAG_COLOR_LABELS: Record<BagColorOption, string> = {

@@ -9,19 +9,18 @@ export type ProductListCategory = {
   heading: string;
 };
 
-/** 헤더 등 클라이언트용 기본 카테고리 (DB와 시드 동기화) */
+/** 헤더 등 클라이언트용 기본 카테고리 (DB와 시드 동기화) — 최상위 카테고리만 */
 export const FALLBACK_PRODUCT_LIST_CATEGORIES: ProductListCategory[] = [
   { slug: null, label: "전체 상품", heading: "전체 상품" },
-  { slug: "tee", label: "반팔티", heading: "반팔티" },
-  { slug: "polo", label: "카라티", heading: "카라티" },
-  { slug: "functional", label: "기능성", heading: "기능성" },
-  { slug: "long-sleeve", label: "긴팔티", heading: "긴팔티" },
-  { slug: "hoodie", label: "후드/집업", heading: "후드/집업" },
-  { slug: "sweatshirt", label: "맨투맨", heading: "맨투맨" },
-  { slug: "kids", label: "아동단체", heading: "아동단체" },
-  { slug: "vest", label: "조끼", heading: "조끼" },
-  { slug: "jumper", label: "단체점퍼", heading: "단체점퍼" },
-  { slug: "baseball", label: "야구점퍼", heading: "야구점퍼" },
+  { slug: "01-tshirts", label: "티셔츠", heading: "티셔츠" },
+  {
+    slug: "02-dry-mesh",
+    label: "드라이메쉬·인터록",
+    heading: "드라이메쉬·인터록",
+  },
+  { slug: "03-polo", label: "폴로셔츠", heading: "폴로셔츠" },
+  { slug: "04-sweat", label: "스웨트", heading: "스웨트" },
+  { slug: "05-others", label: "기타", heading: "기타" },
 ];
 
 export const PRODUCT_LIST_SORT_OPTIONS: {
@@ -37,9 +36,10 @@ export async function fetchProductListCategories(): Promise<
   ProductListCategory[]
 > {
   const rows = await fetchStorefrontCategories();
+  const tops = rows.filter((c) => !c.parent);
   return [
     { slug: null, label: "전체 상품", heading: "전체 상품" },
-    ...rows.map((c) => ({
+    ...tops.map((c) => ({
       slug: c.slug,
       label: c.name,
       heading: c.name,
@@ -48,8 +48,8 @@ export async function fetchProductListCategories(): Promise<
 }
 
 export async function isValidListCategory(slug: string): Promise<boolean> {
-  const cats = await fetchProductListCategories();
-  return cats.some((c) => c.slug === slug);
+  const rows = await fetchStorefrontCategories();
+  return rows.some((c) => c.slug === slug);
 }
 
 export async function getListCategory(

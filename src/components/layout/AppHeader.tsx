@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -15,8 +16,15 @@ export function AppHeader() {
   return (
     <header className="border-b border-zinc-200 bg-white">
       <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4 sm:px-6">
-        <Link href="/" className="text-lg font-semibold text-zinc-900">
-          JH Custom
+        <Link href="/" className="flex items-center text-lg font-semibold text-zinc-900">
+          <Image
+            src="/logo3.png"
+            alt="대지나염"
+            width={991}
+            height={252}
+            priority
+            className="h-7 w-auto"
+          />
         </Link>
         <div className="flex items-center gap-2 sm:gap-4">
           <nav className="flex items-center gap-1 sm:gap-2">

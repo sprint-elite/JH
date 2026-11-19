@@ -28,6 +28,39 @@ export type TopProductRow = {
   revenue: number;
 };
 
+/** MES — 재작업률·수주출하 리드타임 */
+export type MesMonthlyReworkPoint = {
+  monthKey: string;
+  label: string;
+  totalWorkOrders: number;
+  commentWorkOrders: number;
+};
+
+export type MesMonthlyLeadTimePoint = {
+  monthKey: string;
+  label: string;
+  /** 출하 샘플 없으면 0 */
+  avgLeadTimeHours: number;
+  sampleCount: number;
+};
+
+export type MesKpiMetrics = {
+  /** 고객 코멘트가 있는 작업건 / 등록 작업건 × 100 */
+  reworkRatePercent: number | null;
+  reworkOrderCount: number;
+  totalWorkOrderCount: number;
+  /** 주문 등록 → 배송 중(SHIPPED) 전환 평균 시간(시간) */
+  avgLeadTimeHours: number | null;
+  leadTimeSampleCount: number;
+  targetReworkRatePercent: number;
+  targetLeadTimeHours: number;
+  /** 차트: 최근 6개월 */
+  reworkMonthly: MesMonthlyReworkPoint[];
+  leadTimeMonthly: MesMonthlyLeadTimePoint[];
+  /** 리드타임 차트 기준선(시간) */
+  leadTimeReferenceHours: number;
+};
+
 export type AdminDashboardData = {
   summary: {
     todayOrders: number;
@@ -53,6 +86,7 @@ export type AdminDashboardData = {
   todoOrders: Order[];
   recentOrders: Order[];
   topProducts: TopProductRow[];
+  mesKpi: MesKpiMetrics;
 };
 
 function startOfDay(d = new Date()) {
@@ -106,6 +140,180 @@ const orderInclude = {
   items: true,
 } as const;
 
+const registeredWorkWhere = {
+  designId: { not: null },
+  status: { not: "CANCELLED" as const },
+};
+
+import { MES_CHART_MONTHS } from "@/lib/admin-dashboard-charts";
+
+/** 리드타임 차트 y축 기준 점선(시간) */
+const LEAD_TIME_REFERENCE_HOURS = 168;
+
+function monthKeyFromDate(d: Date) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+}
+
+function lastMonths(count: number) {
+  const now = new Date();
+  const rows: {
+    monthKey: string;
+    label: string;
+    start: Date;
+    end: Date;
+  }[] = [];
+  for (let i = count - 1; i >= 0; i--) {
+    const start = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    start.setHours(0, 0, 0, 0);
+    const end = new Date(
+      start.getFullYear(),
+      start.getMonth() + 1,
+      0,
+      23,
+      59,
+      59,
+      999,
+    );
+    rows.push({
+      monthKey: monthKeyFromDate(start),
+      label: start.toLocaleDateString("ko-KR", { month: "short" }),
+      start,
+      end,
+    });
+  }
+  return rows;
+}
+
+function orderHasCustomerComment(o: {
+  userId: string;
+  comments: { userId: string }[];
+}) {
+  return o.comments.some((c) => c.userId === o.userId);
+}
+
+async function fetchMesKpiMetrics(): Promise<MesKpiMetrics> {
+  const targetReworkRatePercent = 3;
+  const targetLeadTimeHours = 72;
+  const monthBuckets = lastMonths(MES_CHART_MONTHS);
+  const chartRangeStart = monthBuckets[0]?.start ?? startOfMonth();
+
+  const [
+    totalWorkOrderCount,
+    workOrdersWithComments,
+    leadSamples,
+    chartWorkOrders,
+    chartLeadSamples,
+  ] = await Promise.all([
+    prisma.order.count({ where: registeredWorkWhere }),
+    prisma.order.findMany({
+      where: registeredWorkWhere,
+      select: {
+        userId: true,
+        comments: { select: { userId: true } },
+      },
+    }),
+    prisma.order.findMany({
+      where: {
+        shippedAt: { not: null },
+        status: { in: ["SHIPPED", "DELIVERED"] },
+      },
+      select: { createdAt: true, shippedAt: true },
+    }),
+    prisma.order.findMany({
+      where: {
+        ...registeredWorkWhere,
+        createdAt: { gte: chartRangeStart },
+      },
+      select: {
+        createdAt: true,
+        userId: true,
+        comments: { select: { userId: true } },
+      },
+    }),
+    prisma.order.findMany({
+      where: {
+        shippedAt: { not: null, gte: chartRangeStart },
+        status: { in: ["SHIPPED", "DELIVERED"] },
+      },
+      select: { createdAt: true, shippedAt: true },
+    }),
+  ]);
+
+  const reworkOrderCount = workOrdersWithComments.filter((o) =>
+    orderHasCustomerComment(o),
+  ).length;
+
+  const reworkRatePercent =
+    totalWorkOrderCount > 0
+      ? Math.round((reworkOrderCount / totalWorkOrderCount) * 1000) / 10
+      : null;
+
+  let avgLeadTimeHours: number | null = null;
+  if (leadSamples.length > 0) {
+    const totalMs = leadSamples.reduce((sum, row) => {
+      const end = row.shippedAt!.getTime();
+      const start = row.createdAt.getTime();
+      return sum + Math.max(0, end - start);
+    }, 0);
+    avgLeadTimeHours =
+      Math.round((totalMs / leadSamples.length / (1000 * 60 * 60)) * 10) / 10;
+  }
+
+  const reworkMonthly: MesMonthlyReworkPoint[] = monthBuckets.map((m) => ({
+    monthKey: m.monthKey,
+    label: m.label,
+    totalWorkOrders: 0,
+    commentWorkOrders: 0,
+  }));
+  const reworkIndex = new Map(reworkMonthly.map((r, i) => [r.monthKey, i]));
+
+  for (const row of chartWorkOrders) {
+    const key = monthKeyFromDate(row.createdAt);
+    const idx = reworkIndex.get(key);
+    if (idx === undefined) continue;
+    reworkMonthly[idx].totalWorkOrders += 1;
+    if (orderHasCustomerComment(row)) {
+      reworkMonthly[idx].commentWorkOrders += 1;
+    }
+  }
+
+  const leadTimeMonthly: MesMonthlyLeadTimePoint[] = monthBuckets.map((m) => ({
+    monthKey: m.monthKey,
+    label: m.label,
+    avgLeadTimeHours: 0,
+    sampleCount: 0,
+  }));
+  const leadIndex = new Map(leadTimeMonthly.map((r, i) => [r.monthKey, i]));
+
+  for (const row of chartLeadSamples) {
+    const shipped = row.shippedAt!;
+    const key = monthKeyFromDate(shipped);
+    const idx = leadIndex.get(key);
+    if (idx === undefined) continue;
+    const hours =
+      Math.max(0, shipped.getTime() - row.createdAt.getTime()) /
+      (1000 * 60 * 60);
+    const bucket = leadTimeMonthly[idx];
+    const prevTotal = bucket.avgLeadTimeHours * bucket.sampleCount;
+    bucket.sampleCount += 1;
+    bucket.avgLeadTimeHours =
+      Math.round(((prevTotal + hours) / bucket.sampleCount) * 10) / 10;
+  }
+
+  return {
+    reworkRatePercent,
+    reworkOrderCount,
+    totalWorkOrderCount,
+    avgLeadTimeHours,
+    leadTimeSampleCount: leadSamples.length,
+    targetReworkRatePercent,
+    targetLeadTimeHours,
+    reworkMonthly,
+    leadTimeMonthly,
+    leadTimeReferenceHours: LEAD_TIME_REFERENCE_HOURS,
+  };
+}
+
 export async function fetchAdminDashboardData(): Promise<AdminDashboardData> {
   const today = startOfDay();
   const week = startOfWeek();
@@ -136,6 +344,7 @@ export async function fetchAdminDashboardData(): Promise<AdminDashboardData> {
     todoCandidates,
     trendRaw,
     topGrouped,
+    mesKpi,
   ] = await Promise.all([
     prisma.order.count({
       where: { createdAt: { gte: today }, ...notCancelled },
@@ -210,6 +419,7 @@ export async function fetchAdminDashboardData(): Promise<AdminDashboardData> {
       orderBy: { _count: { id: "desc" } },
       take: 5,
     }),
+    fetchMesKpiMetrics(),
   ]);
 
   const productIds = topGrouped.map((g) => g.productId);
@@ -290,5 +500,6 @@ export async function fetchAdminDashboardData(): Promise<AdminDashboardData> {
     todoOrders,
     recentOrders: recentRaw.map(toOrderDto),
     topProducts,
+    mesKpi,
   };
 }

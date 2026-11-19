@@ -75,10 +75,10 @@ export function OrderCommentsPanel({
       <div className="flex h-full flex-col items-center justify-center px-4 text-center">
         <MessageSquare className="h-8 w-8 text-zinc-300" />
         <p className="mt-3 text-sm font-medium text-zinc-600">
-          주문을 불러오면 코멘트를 확인할 수 있습니다
+          주문 후에 운영자와 대화할 수 있습니다
         </p>
         <p className="mt-1 text-xs text-zinc-400">
-          주문 내역 불러오기에서 기존 주문을 선택해 주세요.
+          지금은 작업 요청 탭에서 시안에 메모를 남겨 주세요.
         </p>
       </div>
     );

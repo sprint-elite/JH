@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -16,6 +17,7 @@ type InquiryRow = {
 };
 
 export function InquiryForm() {
+  const searchParams = useSearchParams();
   const { user, loading: authLoading } = useAuth();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -25,6 +27,11 @@ export function InquiryForm() {
   const [done, setDone] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [rows, setRows] = useState<InquiryRow[]>([]);
+
+  useEffect(() => {
+    const fromChat = searchParams.get("subject")?.trim();
+    if (fromChat) setSubject((prev) => prev || fromChat.slice(0, 80));
+  }, [searchParams]);
 
   useEffect(() => {
     if (!user) return;
@@ -65,6 +72,11 @@ export function InquiryForm() {
     e.preventDefault();
     setBusy(true);
     setError(null);
+    if (body.trim().length < 5) {
+      setError("문의 내용은 5자 이상 입력해 주세요.");
+      setBusy(false);
+      return;
+    }
     try {
       const res = await fetch("/api/inquiries", {
         method: "POST",

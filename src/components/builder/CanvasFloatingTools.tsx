@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef } from "react";
-import { ImagePlus, Palette, Shirt, Type } from "lucide-react";
+import { ImagePlus, Shirt, Sparkles, Type } from "lucide-react";
 import type { DesignCanvasRef } from "./DesignCanvas";
 
 interface CanvasFloatingToolsProps {
@@ -9,6 +9,7 @@ interface CanvasFloatingToolsProps {
   disabled?: boolean;
   onProductChange?: () => void;
   onDesignClick?: () => void;
+  designActive?: boolean;
 }
 
 const TOOLS: Array<{
@@ -25,7 +26,12 @@ const TOOLS: Array<{
     labelLines: ["이미지", "업로드"],
   },
   { key: "text", icon: Type, label: "텍스트" },
-  { key: "design", icon: Palette, label: "디자인" },
+  {
+    key: "design",
+    icon: Sparkles,
+    label: "AI 디자인",
+    labelLines: ["AI", "디자인"],
+  },
 ];
 
 export function CanvasFloatingTools({
@@ -33,6 +39,7 @@ export function CanvasFloatingTools({
   disabled,
   onProductChange,
   onDesignClick,
+  designActive,
 }: CanvasFloatingToolsProps) {
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -65,10 +72,23 @@ export function CanvasFloatingTools({
             type="button"
             disabled={isDisabled}
             onClick={() => handleClick(key)}
-            className="pointer-events-auto flex w-[72px] cursor-pointer flex-col items-center gap-1 rounded-xl bg-white px-2 py-2.5 shadow-md ring-1 ring-zinc-200/80 transition hover:-translate-y-0.5 hover:shadow-lg hover:ring-zinc-300 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:translate-y-0 disabled:hover:shadow-md"
+            className={`pointer-events-auto flex w-[72px] cursor-pointer flex-col items-center gap-1 rounded-xl px-2 py-2.5 shadow-md ring-1 transition hover:-translate-y-0.5 hover:shadow-lg active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:translate-y-0 disabled:hover:shadow-md ${
+              key === "design" && designActive
+                ? "bg-zinc-900 text-white ring-zinc-900"
+                : "bg-white text-zinc-700 ring-zinc-200/80 hover:ring-zinc-300"
+            }`}
           >
-            <Icon className="h-5 w-5 text-zinc-700" strokeWidth={1.5} />
-            <span className="text-center text-[10px] font-medium leading-tight text-zinc-600">
+            <Icon
+              className={`h-5 w-5 ${
+                key === "design" && designActive ? "text-white" : "text-zinc-700"
+              }`}
+              strokeWidth={1.5}
+            />
+            <span
+              className={`text-center text-[10px] font-medium leading-tight ${
+                key === "design" && designActive ? "text-white" : "text-zinc-600"
+              }`}
+            >
               {labelLines ? (
                 <>
                   {labelLines[0]}

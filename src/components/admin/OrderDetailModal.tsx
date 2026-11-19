@@ -458,6 +458,7 @@ export function OrderDetailModal({
                     <DesignPreviewPanel
                       key={order.id}
                       payload={payload}
+                      mockupFaces={order.productMockupFaces ?? []}
                       side={previewSide}
                       onSideChange={setPreviewSide}
                       annotations={annotations}
@@ -651,7 +652,7 @@ function OrderDetailSubPanel({
                       value={CLOSURE_LABELS[payload.options.closureType]}
                     />
                     <DetailRow
-                      label="에코백 형태"
+                      label="형태"
                       value={BAG_SHAPE_LABELS[payload.options.bagShape]}
                     />
                   </>

@@ -16,6 +16,7 @@ export type GuideProductCard = {
   basePrice: number;
   saleType: string;
   productType: ProductType;
+  thumbnailUrl: string | null;
   caption?: string;
 };
 
@@ -41,7 +42,7 @@ function ProductPickGrid({
       {picks.map((pick) => {
         const p = productsBySlug[pick.slug];
         if (!p) return null;
-        const img = PRODUCT_DISPLAY_IMAGES[p.productType];
+        const img = p.thumbnailUrl ?? PRODUCT_DISPLAY_IMAGES[p.productType];
         return (
           <Link
             key={pick.slug}
@@ -54,7 +55,11 @@ function ProductPickGrid({
                   src={img}
                   alt={p.name}
                   fill
-                  className="object-contain p-4 transition duration-300 group-hover:scale-105"
+                  className={
+                    p.thumbnailUrl
+                      ? "object-cover transition duration-300 group-hover:scale-105"
+                      : "object-contain p-4 transition duration-300 group-hover:scale-105"
+                  }
                   sizes="(max-width: 640px) 45vw, 200px"
                 />
               ) : (

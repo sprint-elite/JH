@@ -1,15 +1,16 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
-import { Menu, ShoppingBag, X } from "lucide-react";
+import { Menu, X } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { HeaderSearch } from "@/components/home/HeaderSearch";
 import { CartNavLink } from "@/components/cart/CartNavLink";
 import { TwoMinuteTemplateNavLink } from "@/components/home/TwoMinuteTemplateNavLink";
 import { PRODUCT_PAGE_CONTAINER } from "@/lib/product-layout";
-import { SITE_INFO } from "@/lib/site-info";
+import { useSiteSettings } from "@/hooks/useSiteSettings";
 import {
   categoryNavHref,
   FALLBACK_PRODUCT_LIST_CATEGORIES,
@@ -115,6 +116,12 @@ function AuthActions({
       ) : (
         <>
           <Link
+            href="/orders"
+            className="rounded-lg px-2.5 py-1.5 text-sm font-medium text-zinc-600 hover:bg-zinc-100"
+          >
+            주문조회
+          </Link>
+          <Link
             href="/login"
             className="rounded-lg px-2.5 py-1.5 text-sm font-medium text-zinc-600 hover:bg-zinc-100"
           >
@@ -207,6 +214,13 @@ function MobileNavPanel({
           마이페이지
         </Link>
         <Link
+          href="/orders"
+          onClick={onClose}
+          className="rounded-lg px-3 py-2.5 text-sm text-zinc-600 hover:bg-zinc-50"
+        >
+          비회원 주문조회
+        </Link>
+        <Link
           href="/inquiry"
           onClick={onClose}
           className="rounded-lg px-3 py-2.5 text-sm text-zinc-600 hover:bg-zinc-50"
@@ -234,6 +248,7 @@ function ProductHeaderBar({
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const categoryNav = useStorefrontCategories();
+  const { brandName } = useSiteSettings();
 
   return (
     <>
@@ -252,12 +267,16 @@ function ProductHeaderBar({
 
         <Link
           href="/"
-          className="flex shrink-0 items-center gap-2 text-lg font-black tracking-tighter text-zinc-900 sm:text-xl"
+          className="flex shrink-0 items-center text-lg font-black tracking-tighter text-zinc-900 sm:text-xl"
         >
-          <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-zinc-900 text-white sm:h-8 sm:w-8">
-            <ShoppingBag className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-          </span>
-          <span className="hidden sm:inline">{SITE_INFO.brandName}</span>
+          <Image
+            src="/logo3.png"
+            alt={brandName}
+            width={991}
+            height={252}
+            priority
+            className="h-7 w-auto sm:h-8"
+          />
         </Link>
 
         <nav className="hidden min-w-0 flex-1 items-center gap-0.5 overflow-visible lg:flex">
@@ -319,6 +338,7 @@ export function HomeHeader({ wide = false }: { wide?: boolean }) {
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
   const categoryNav = useStorefrontCategories();
+  const { brandName } = useSiteSettings();
   const containerClass = wide
     ? PRODUCT_PAGE_CONTAINER
     : "mx-auto max-w-7xl px-4 sm:px-6";
@@ -340,7 +360,7 @@ export function HomeHeader({ wide = false }: { wide?: boolean }) {
   return (
     <header className="sticky top-0 z-50 overflow-visible bg-white shadow-sm">
       <div className="border-b border-zinc-100 bg-zinc-900 px-4 py-2 text-center text-xs text-zinc-300">
-        <span className="font-semibold text-white">{SITE_INFO.brandName}</span>
+        <span className="font-semibold text-white">{brandName}</span>
         <span className="mx-2 text-zinc-600">|</span>
         단체티 나염 1장부터 제작 · 3~5일 평균 출고 · 작업 코멘트 실시간 확인
       </div>
@@ -358,12 +378,16 @@ export function HomeHeader({ wide = false }: { wide?: boolean }) {
 
         <Link
           href="/"
-          className="flex shrink-0 items-center gap-2 text-2xl font-black tracking-tighter text-zinc-900"
+          className="flex shrink-0 items-center text-2xl font-black tracking-tighter text-zinc-900"
         >
-          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-zinc-900 text-white">
-            <ShoppingBag className="h-4 w-4" />
-          </span>
-          {SITE_INFO.brandName}
+          <Image
+            src="/logo3.png"
+            alt={brandName}
+            width={991}
+            height={252}
+            priority
+            className="h-9 w-auto"
+          />
         </Link>
 
         <HeaderSearch

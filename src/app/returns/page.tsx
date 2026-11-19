@@ -1,14 +1,18 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { LegalPageShell, LegalSection } from "@/components/legal/LegalPageShell";
-import { SITE_INFO } from "@/lib/site-info";
+import { getSiteSettings } from "@/lib/site-settings";
 
-export const metadata: Metadata = {
-  title: "교환·반품 안내",
-  description: `${SITE_INFO.brandName} 청약철회·교환·반품 안내`,
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const info = await getSiteSettings();
+  return {
+    title: "교환·반품 안내",
+    description: `${info.brandName} 청약철회·교환·반품 안내`,
+  };
+}
 
-export default function ReturnsPage() {
+export default async function ReturnsPage() {
+  const info = await getSiteSettings();
   return (
     <LegalPageShell title="교환·반품 안내">
       <p>
@@ -53,8 +57,8 @@ export default function ReturnsPage() {
           주문만 신청할 수 있습니다.
         </p>
         <p className="mt-3">
-          급한 문의는 {SITE_INFO.email} 또는 {SITE_INFO.phone}으로 주문번호와
-          함께 연락해 주세요. 운영시간: {SITE_INFO.hours}
+          급한 문의는 {info.email} 또는 {info.phone}으로 주문번호와
+          함께 연락해 주세요. 운영시간: {info.hours}
         </p>
       </LegalSection>
     </LegalPageShell>

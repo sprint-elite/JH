@@ -47,19 +47,20 @@ export async function POST(request: Request) {
     if (phoneError) return jsonError(phoneError, 400);
 
     const existing = await prisma.user.findUnique({ where: { email } });
-    if (existing && !existing.deletedAt) {
+    if (existing && !existing.deletedAt && !existing.isGuest) {
       return jsonError("이미 가입된 이메일입니다.", 409);
     }
 
     const passwordHash = await bcrypt.hash(password, 10);
     const now = new Date();
+    const reuseAccount = Boolean(existing?.deletedAt || existing?.isGuest);
 
-    const user = existing?.deletedAt
+    const user = reuseAccount && existing
       ? await prisma.user.update({
           where: { id: existing.id },
           data: {
             name: name.trim(),
-            phone: phone || null,
+            phone: phone || existing.phone,
             passwordHash,
             role: "CUSTOMER",
             isGuest: false,

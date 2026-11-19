@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
+import { createJSONStorage, persist } from "zustand/middleware";
 import { generateId } from "@/lib/id";
 import { generateWorkOrder } from "@/lib/workOrder";
 import type {
@@ -15,6 +15,43 @@ import type {
 } from "@/types/builder";
 import { DEFAULT_MOCKUP_OFFSET, getDesignViewSides, normalizeBuilderOptions } from "@/types/builder";
 import type { SavedBuilderPayload } from "@/types/saved-design";
+
+const persistStorage = {
+  getItem: (name: string) => {
+    if (typeof window === "undefined") return null;
+    try {
+      return window.localStorage.getItem(name);
+    } catch {
+      return null;
+    }
+  },
+  setItem: (name: string, value: string) => {
+    if (typeof window === "undefined") return;
+    try {
+      let next = value;
+      if (next.length > 2_000_000) {
+        const parsed = JSON.parse(next) as { state?: { designData?: unknown } };
+        if (parsed.state) parsed.state.designData = {};
+        next = JSON.stringify(parsed);
+      }
+      window.localStorage.setItem(name, next);
+    } catch {
+      try {
+        window.localStorage.removeItem(name);
+      } catch {
+        /* ignore quota */
+      }
+    }
+  },
+  removeItem: (name: string) => {
+    if (typeof window === "undefined") return;
+    try {
+      window.localStorage.removeItem(name);
+    } catch {
+      /* ignore */
+    }
+  },
+};
 
 const defaultOptions = normalizeBuilderOptions({ quantity: 50 });
 
@@ -413,6 +450,7 @@ export const useBuilderStore = create<BuilderStore>()(
     {
       name: "jh-builder-mvp",
       version: 6,
+      storage: createJSONStorage(() => persistStorage),
       migrate: (persisted, version) => {
         const state = persisted as Record<string, unknown>;
         if (version < 2) {

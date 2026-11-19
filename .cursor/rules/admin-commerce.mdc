@@ -1,0 +1,13 @@
+---
+description: 주문·결제·관리자 상태 규칙
+globs: src/app/api/orders/**/*.ts,src/app/api/payments/**/*.ts,src/app/admin/**/*.tsx,src/components/admin/**/*.tsx
+alwaysApply: false
+---
+
+# 주문과 운영
+
+- 주문 상태와 결제 상태를 따로 둔다. 무통장은 관리자 입금 확인 전까지 `UNPAID`.
+- 고객 취소는 대기/입금대기이고 **결제 완료 전**만.
+- 관리자 로그인은 `/admin/login`. 일반 `/login`과 섞지 말 것.
+- 사이트 설정(브랜드, 계좌, 배송비)은 저장 즉시 상점에 반영되는 전제.
+---

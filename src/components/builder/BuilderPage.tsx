@@ -1,9 +1,17 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
-import { ArrowLeft, ChevronLeft, ChevronRight, PanelLeft } from "lucide-react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+import { ArrowLeft, ChevronLeft, ChevronRight, PanelLeft, Rotate3d } from "lucide-react";
 import { DesignCanvas, type DesignCanvasRef } from "./DesignCanvas";
 import { BuilderTopToolbar } from "./BuilderTopToolbar";
 import { CanvasFloatingTools } from "./CanvasFloatingTools";
@@ -14,6 +22,8 @@ import { LeftSidebar } from "./LeftSidebar";
 import { AnnotationPins } from "./AnnotationPins";
 import { AnnotationMemoModal } from "./AnnotationMemoModal";
 import { LayerPanelModal } from "./LayerPanelModal";
+import { AiDesignHelperPanel } from "./AiDesignHelperPanel";
+import { BuilderFontsLoader } from "./BuilderFontsLoader";
 import {
   OrderLoadButton,
   OrderLoadModal,
@@ -27,23 +37,24 @@ import {
   type BuilderProductOption,
 } from "./ProductChangeModal";
 import { useAuth } from "@/hooks/useAuth";
-import { SITE_INFO } from "@/lib/site-info";
+import { useSiteSettings } from "@/hooks/useSiteSettings";
 import { useBuilderStore } from "@/store";
 import { calculatePrice, type PricingContext } from "@/lib/pricing";
-import {
-  exportBuilderPayload,
-  productSlugFromType,
-} from "@/lib/saved-design";
+import { exportBuilderPayload } from "@/lib/saved-design";
 import { safeAdminReturnTo } from "@/lib/admin-builder";
 import type { OrderShippingInput } from "@/lib/order-shipping";
 import { embedImagesInDesignState, embedImagesInDesignJson } from "@/lib/fabric/image-persist";
 import { getProductTitle } from "@/lib/fabric/mockup-builder";
-import type { ProductType } from "@/types/builder";
+import type { ProductType, ViewSide } from "@/types/builder";
+import { getDesignViewSides } from "@/types/builder";
+import type { AiRequestIntent } from "@/lib/ai-design/request-intent";
 import type { CanvasSelectionState } from "@/types/text-style";
 import {
   BuilderProductProvider,
   type BuilderProductContextValue,
 } from "./BuilderProductContext";
+import { SpinPreviewModal } from "./SpinPreviewModal";
+
 const PRODUCT_TYPES = new Set<ProductType>(["ecobag", "shopping-bag", "pouch"]);
 
 const EMPTY_SELECTION: CanvasSelectionState = { kind: "none" };
@@ -76,8 +87,9 @@ export function BuilderPage({
   const [canvasDims, setCanvasDims] = useState({ w: 0, h: 0 });
   const [jsonModalContent, setJsonModalContent] = useState("");
   const [showOptions, setShowOptions] = useState(false);
-  const [leftSidebarOpen, setLeftSidebarOpen] = useState(!embedded);
+  const [leftSidebarOpen, setLeftSidebarOpen] = useState(true);
   const [showLayerModal, setShowLayerModal] = useState(false);
+  const [showAiDesign, setShowAiDesign] = useState(false);
   const [designRevision, setDesignRevision] = useState(0);
   const [canvasZoom, setCanvasZoom] = useState(1);
   const [showOrderLoadModal, setShowOrderLoadModal] = useState(false);
@@ -95,7 +107,10 @@ export function BuilderPage({
   const [selectionState, setSelectionState] =
     useState<CanvasSelectionState>(EMPTY_SELECTION);
   const [showPrintAreaGuide, setShowPrintAreaGuide] = useState(true);
+  const [spinPreviewOpen, setSpinPreviewOpen] = useState(false);
+  const [placingAi, setPlacingAi] = useState(false);
   const { user, logout } = useAuth();
+  const { brandName } = useSiteSettings();
   const loadSavedPayload = useBuilderStore((s) => s.loadSavedPayload);
   const loadedOrderNumber = useBuilderStore((s) => s.loadedOrderNumber);
   const loadedOrderId = useBuilderStore((s) => s.loadedOrderId);
@@ -148,6 +163,8 @@ export function BuilderPage({
         "ecobag")
     : null;
 
+  const orderFromUrl = embedded ? null : searchParams.get("order");
+
   useLayoutEffect(() => {
     if (!embedded || !embeddedProductKey) return;
 
@@ -172,6 +189,8 @@ export function BuilderPage({
 
   useLayoutEffect(() => {
     if (embedded || !standaloneProductKey) return;
+    // 마이페이지에서 ?order= 로 들어오면 빈 상품으로 지우고 시작하면 로고가 사라짐
+    if (orderFromUrl) return;
 
     const productType =
       productTypeProp ??
@@ -190,6 +209,7 @@ export function BuilderPage({
     productTypeProp,
     productContext?.minQuantity,
     resetForNewProduct,
+    orderFromUrl,
   ]);
 
   useEffect(() => {
@@ -211,14 +231,19 @@ export function BuilderPage({
     }
   }, [searchParams, setOption, initialProductSlug, productTypeProp, embedded]);
 
-  const orderFromUrl = embedded ? null : searchParams.get("order");
-
   useEffect(() => {
     if (embedded) return;
 
     const orderId = orderFromUrl;
     if (!orderId || !user || !canvasReady) return;
-    if (loadedOrderId === orderId) return;
+
+    const hasDesignObjects = Object.values(
+      useBuilderStore.getState().designData,
+    ).some((side) => {
+      const objects = (side as { objects?: unknown[] } | null)?.objects;
+      return Array.isArray(objects) && objects.length > 0;
+    });
+    if (loadedOrderId === orderId && hasDesignObjects) return;
 
     let cancelled = false;
 
@@ -243,33 +268,12 @@ export function BuilderPage({
           error?: string;
         };
 
-        if (!res.ok || !data.order?.design?.builderJson) return;
+        const order = data.order;
+        const design = order?.design;
+        if (!res.ok || !order || !design?.builderJson) return;
 
-        const { order } = data;
-        const slug = productSlugFromType(
-          order.design!.builderJson.options.productType,
-        );
-        const productFromUrl = searchParams.get("product");
-        if (
-          initialProductSlug &&
-          slug !== initialProductSlug
-        ) {
-          return;
-        }
-        if (
-          !initialProductSlug &&
-          productFromUrl &&
-          productFromUrl !== slug
-        ) {
-          return;
-        }
-
-        if (!initialProductSlug) {
-          setOption("productType", order.design!.builderJson.options.productType);
-        }
-
-        loadSavedPayload(order.design!.builderJson, {
-          id: order.design!.id,
+        loadSavedPayload(design.builderJson, {
+          id: design.id,
           title: order.productName,
           orderId: order.id,
           orderNumber: order.orderNumber,
@@ -299,10 +303,7 @@ export function BuilderPage({
     user,
     canvasReady,
     loadedOrderId,
-    initialProductSlug,
     loadSavedPayload,
-    searchParams,
-    setOption,
     embedded,
   ]);
 
@@ -312,6 +313,7 @@ export function BuilderPage({
   const designData = useBuilderStore((s) => s.designData);
   const annotationMode = useBuilderStore((s) => s.annotationMode);
   const saveCurrentDesign = useBuilderStore((s) => s.saveCurrentDesign);
+  const mockupOffsets = useBuilderStore((s) => s.mockupOffsets);
   const setPendingPin = useBuilderStore((s) => s.setPendingPin);
   const showJsonModal = useBuilderStore((s) => s.showJsonModal);
   const setShowJsonModal = useBuilderStore((s) => s.setShowJsonModal);
@@ -339,6 +341,42 @@ export function BuilderPage({
     const embedded = (await embedImagesInDesignJson(json)) ?? json;
     saveCurrentDesign(currentSide, embedded);
   }, [currentSide, saveCurrentDesign]);
+
+  const placeAiDesign = useCallback(
+    async (dataUrl: string, intent?: AiRequestIntent) => {
+      const slot = intent?.slot ?? "print-center";
+      setPlacingAi(true);
+      try {
+        if (slot === "back-large") {
+          const sides = getDesignViewSides(
+            options.productType,
+            options.printSide,
+            productContext?.mockupFaces?.length
+              ? productContext.mockupFaces.map((f) => f.side)
+              : null,
+          );
+          const back =
+            sides.find((s) => s === "back") ?? sides[1] ?? null;
+          const state = useBuilderStore.getState();
+          if (back && state.currentSide !== back) {
+            const canvas = canvasRef.current;
+            if (canvas) {
+              state.saveCurrentDesign(state.currentSide, canvas.exportJson());
+            }
+            state.setCurrentSide(back as ViewSide);
+            await new Promise((r) => window.setTimeout(r, 420));
+          }
+        }
+        await canvasRef.current?.addImageFromDataUrl(dataUrl, {
+          slot,
+          printScale: intent?.printScale,
+        });
+      } finally {
+        setPlacingAi(false);
+      }
+    },
+    [options.productType, options.printSide, productContext?.mockupFaces],
+  );
 
   const buildOrderConfirmData = useCallback(
     (mode: "create" | "update"): OrderConfirmData | null => {
@@ -376,7 +414,7 @@ export function BuilderPage({
 
   const openOrderConfirm = useCallback(
     (mode: "create" | "update") => {
-      if (!user) {
+      if (mode === "update" && !user) {
         const next =
           embedded && initialProductSlug
             ? `/products/${initialProductSlug}`
@@ -427,7 +465,7 @@ export function BuilderPage({
   }, [currentSide, saveCurrentDesign]);
 
   const handleOrderConfirm = useCallback(
-    async (shipping: OrderShippingInput) => {
+    async (shipping: OrderShippingInput, extra?: { email?: string }) => {
       if (!canvasRef.current) return;
       setSubmittingOrder(true);
 
@@ -459,12 +497,14 @@ export function BuilderPage({
                 ? {}
                 : {
                     savedDesignId: state.savedDesignId,
+                    ...(user ? {} : extra?.email ? { email: extra.email } : {}),
                   }),
             }),
           },
         );
 
-        const data = (await res.json()) as {
+        const raw = await res.text();
+        let data: {
           order?: {
             id: string;
             orderNumber: string;
@@ -477,7 +517,18 @@ export function BuilderPage({
             shippingAddress: string | null;
           };
           error?: string;
-        };
+        } = {};
+        try {
+          data = raw ? (JSON.parse(raw) as typeof data) : {};
+        } catch {
+          throw new Error(
+            res.status === 413
+              ? "시안 이미지가 커서 주문하지 못했습니다. 다시 시도해 주세요."
+              : isUpdate
+                ? "주문 수정에 실패했습니다."
+                : "주문에 실패했습니다.",
+          );
+        }
 
         if (!res.ok) {
           throw new Error(
@@ -539,6 +590,7 @@ export function BuilderPage({
       router,
       productContext?.slug,
       initialProductSlug,
+      user,
     ],
   );
 
@@ -626,6 +678,26 @@ export function BuilderPage({
   const handleZoomOut = () => setCanvasZoom((z) => clampZoom(z - ZOOM_STEP));
   const handleZoomReset = () => setCanvasZoom(1);
 
+  const spinViewSides = useMemo(
+    () =>
+      getDesignViewSides(
+        options.productType,
+        options.printSide,
+        productContext?.mockupFaces?.length
+          ? productContext.mockupFaces.map((f) => f.side)
+          : null,
+      ),
+    [options.productType, options.printSide, productContext?.mockupFaces],
+  );
+
+  const handleOpenSpinPreview = useCallback(() => {
+    const canvas = canvasRef.current;
+    if (canvas) {
+      saveCurrentDesign(currentSide, canvas.exportJson());
+    }
+    setSpinPreviewOpen(true);
+  }, [currentSide, saveCurrentDesign]);
+
   const handleCanvasWheel = useCallback(
     (e: React.WheelEvent) => {
       if (!e.ctrlKey && !e.metaKey) return;
@@ -636,18 +708,42 @@ export function BuilderPage({
     [clampZoom],
   );
 
-  const toolbarTrailing = embedded ? (
-    <button
-      type="button"
-      onClick={() => setShowOptions((v) => !v)}
-      className="rounded-lg border border-zinc-200 px-2.5 py-1 text-xs font-medium text-zinc-700 hover:bg-zinc-50 lg:hidden"
-    >
-      옵션
-    </button>
-  ) : undefined;
+  const toolbarTrailing = (
+    <>
+      {embedded ? (
+        <>
+          <button
+            type="button"
+            onClick={toggleLeftSidebar}
+            className="rounded-lg border border-zinc-200 px-2.5 py-1 text-xs font-medium text-zinc-700 hover:bg-zinc-50 lg:hidden"
+          >
+            작업요청
+          </button>
+          <button
+            type="button"
+            onClick={() => setShowOptions((v) => !v)}
+            className="rounded-lg border border-zinc-200 px-2.5 py-1 text-xs font-medium text-zinc-700 hover:bg-zinc-50 lg:hidden"
+          >
+            옵션
+          </button>
+        </>
+      ) : null}
+      <button
+        type="button"
+        disabled={!canvasReady || annotationMode}
+        title="360° 미리보기"
+        onClick={handleOpenSpinPreview}
+        className="flex shrink-0 items-center gap-1.5 rounded-lg border border-zinc-200 px-2.5 py-1 text-xs font-medium text-zinc-700 transition-colors hover:bg-zinc-50 disabled:opacity-40"
+      >
+        <Rotate3d className="h-3.5 w-3.5" strokeWidth={1.5} />
+        <span className="whitespace-nowrap">360° 미리보기</span>
+      </button>
+    </>
+  );
 
   return (
     <BuilderProductProvider value={productContext ?? null}>
+    <BuilderFontsLoader />
     <div
       className={
         embedded
@@ -672,7 +768,13 @@ export function BuilderPage({
               href="/"
               className="shrink-0 text-lg font-black tracking-tight text-zinc-900"
             >
-              {SITE_INFO.brandName}
+              <Image
+                src="/logo3.png"
+                alt={brandName}
+                width={991}
+                height={252}
+                className="h-7 w-auto"
+              />
             </Link>
           )}
           {productTitle && (
@@ -772,54 +874,50 @@ export function BuilderPage({
       />
 
       <div className="relative flex min-h-0 flex-1">
-        {!embedded && (
-          <>
-            <div
-              className={`hidden shrink-0 overflow-hidden transition-[width] duration-300 ease-in-out lg:block ${
-                leftSidebarOpen ? "w-[300px]" : "w-0"
-              }`}
-            >
-              <div className="h-full" style={{ width: LEFT_SIDEBAR_W }}>
-                <LeftSidebar
-                  orderId={loadedOrderId}
-                  orderNumber={loadedOrderNumber || undefined}
-                />
-              </div>
-            </div>
+        <div
+          className={`hidden shrink-0 overflow-hidden transition-[width] duration-300 ease-in-out lg:block ${
+            leftSidebarOpen ? "w-[300px]" : "w-0"
+          }`}
+        >
+          <div className="h-full" style={{ width: LEFT_SIDEBAR_W }}>
+            <LeftSidebar
+              orderId={loadedOrderId}
+              orderNumber={loadedOrderNumber || undefined}
+            />
+          </div>
+        </div>
 
-            <div
-              className={`${
-                leftSidebarOpen ? "fixed inset-0 z-40 flex lg:hidden" : "hidden"
-              }`}
-            >
-              <button
-                type="button"
-                className="absolute inset-0 bg-black/30"
-                onClick={() => setLeftSidebarOpen(false)}
-              />
-              <div className="relative z-10 h-full shadow-xl">
-                <LeftSidebar
-                  orderId={loadedOrderId}
-                  orderNumber={loadedOrderNumber || undefined}
-                />
-              </div>
-            </div>
+        <div
+          className={`${
+            leftSidebarOpen ? "fixed inset-0 z-40 flex lg:hidden" : "hidden"
+          }`}
+        >
+          <button
+            type="button"
+            className="absolute inset-0 bg-black/30"
+            onClick={() => setLeftSidebarOpen(false)}
+          />
+          <div className="relative z-10 h-full shadow-xl">
+            <LeftSidebar
+              orderId={loadedOrderId}
+              orderNumber={loadedOrderNumber || undefined}
+            />
+          </div>
+        </div>
 
-            <button
-              type="button"
-              onClick={toggleLeftSidebar}
-              title={leftSidebarOpen ? "작업 요청 닫기" : "작업 요청 열기"}
-              className="absolute top-1/2 z-30 hidden -translate-y-1/2 items-center justify-center rounded-r-lg border border-l-0 border-zinc-200 bg-white py-3 pl-1 pr-1.5 shadow-md transition-[left] duration-300 ease-in-out hover:bg-zinc-50 lg:flex"
-              style={{ left: leftSidebarOpen ? LEFT_SIDEBAR_W : 0 }}
-            >
-              {leftSidebarOpen ? (
-                <ChevronLeft className="h-4 w-4 text-zinc-600" />
-              ) : (
-                <PanelLeft className="h-4 w-4 text-zinc-600" />
-              )}
-            </button>
-          </>
-        )}
+        <button
+          type="button"
+          onClick={toggleLeftSidebar}
+          title={leftSidebarOpen ? "작업 요청 닫기" : "작업 요청 열기"}
+          className="absolute top-1/2 z-30 hidden -translate-y-1/2 items-center justify-center rounded-r-lg border border-l-0 border-zinc-200 bg-white py-3 pl-1 pr-1.5 shadow-md transition-[left] duration-300 ease-in-out hover:bg-zinc-50 lg:flex"
+          style={{ left: leftSidebarOpen ? LEFT_SIDEBAR_W : 0 }}
+        >
+          {leftSidebarOpen ? (
+            <ChevronLeft className="h-4 w-4 text-zinc-600" />
+          ) : (
+            <PanelLeft className="h-4 w-4 text-zinc-600" />
+          )}
+        </button>
 
         <main
           className={`relative min-w-0 flex-1 overflow-auto ${
@@ -874,10 +972,21 @@ export function BuilderPage({
               canvasRef={canvasRef}
               disabled={!canvasReady}
               onProductChange={openProductChange}
-              onDesignClick={() => setShowLayerModal(true)}
+              onDesignClick={() => setShowAiDesign((v) => !v)}
+              designActive={showAiDesign}
             />
           )}
-          <CanvasViewToggle canvasRef={canvasRef} />
+          <AiDesignHelperPanel
+            open={showAiDesign && !annotationMode}
+            disabled={!canvasReady || annotationMode}
+            placing={placingAi}
+            onClose={() => setShowAiDesign(false)}
+            onPlace={placeAiDesign}
+          />
+          <CanvasViewToggle
+            canvasRef={canvasRef}
+            shiftLeft={showAiDesign && !annotationMode}
+          />
         </main>
 
         <aside
@@ -939,6 +1048,7 @@ export function BuilderPage({
         open={orderConfirmOpen}
         data={orderConfirmData}
         submitting={submittingOrder}
+        needEmail={!user}
         onClose={() => {
           if (submittingOrder) return;
           setOrderConfirmOpen(false);
@@ -953,6 +1063,16 @@ export function BuilderPage({
         mode={productModalMode}
         onClose={() => setProductChangeOpen(false)}
         onSelect={handleProductSelect}
+      />
+
+      <SpinPreviewModal
+        open={spinPreviewOpen}
+        onClose={() => setSpinPreviewOpen(false)}
+        options={options}
+        designData={designData}
+        viewSides={spinViewSides}
+        mockupOffsets={mockupOffsets}
+        mockupFaces={productContext?.mockupFaces ?? []}
       />
     </div>
     </BuilderProductProvider>

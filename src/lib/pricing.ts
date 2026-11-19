@@ -19,6 +19,9 @@ const SIZE_ADDON: Record<BuilderOptions["size"], number> = {
   S: 0,
   M: 500,
   L: 1000,
+  XL: 1500,
+  "2XL": 2000,
+  "3XL": 2500,
 };
 
 const FABRIC_ADDON: Record<BuilderOptions["fabric"], number> = {

@@ -1,0 +1,13 @@
+---
+description: 시안 빌더 — 임베드/독립 화면과 작업 요청
+globs: src/components/builder/**/*.tsx,src/store/**/*.ts,src/lib/fabric/**/*.ts
+alwaysApply: false
+---
+
+# 빌더
+
+- `BuilderPage` `embedded`: 상품 상세에 올린 커스텀 에디터. 헤더는 숨기되 **왼쪽 작업 요청/Comment 사이드바는 유지**한다.
+- 작업 요청(핀·메모)은 주문 전에도 시안에 남기고, 주문 저장 시 함께 간다.
+- Comment는 `orderId`가 있을 때만 등록된다. 주문 전에는 안내만.
+- 독립 `/builder`와 임베드 상세는 같은 엔진이다. 임베드라고 기능을 빼지 말 것.
+- 관리자 시안 수정은 `from=admin` / `returnTo`. 고객 결제 화면으로 관리자를 보내지 말 것.

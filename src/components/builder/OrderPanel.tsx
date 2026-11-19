@@ -9,8 +9,8 @@ import {
   HANDLE_LABELS,
   POCKET_LABELS,
   PRINT_SIDE_LABELS,
+  DEFAULT_APPAREL_SIZES,
   SIZE_LABELS,
-  type SizeOption,
 } from "@/types/builder";
 import { useBuilderProduct } from "./BuilderProductContext";
 import { ProductExtrasOptions } from "./ProductExtrasOptions";
@@ -27,8 +27,6 @@ interface OrderPanelProps {
   /** 관리자 수정 모드: 신규 주문 버튼 숨김 */
   adminEdit?: boolean;
 }
-
-const ALL_SIZES: SizeOption[] = ["S", "M", "L"];
 
 export function OrderPanel({
   onOrder,
@@ -58,7 +56,7 @@ export function OrderPanel({
     [options, pricingCtx],
   );
 
-  const sizeOptions = product?.optionSchema?.sizes ?? ALL_SIZES;
+  const sizeOptions = product?.optionSchema?.sizes ?? DEFAULT_APPAREL_SIZES;
   const baseShipping = product?.optionSchema?.shippingFee ?? SHIPPING_FEE;
   const shippingFee = resolveShippingFee(price.totalPrice, baseShipping);
 

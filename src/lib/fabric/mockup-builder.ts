@@ -185,6 +185,21 @@ export interface MockupPlacement {
   handleMaskSrc: string | null;
 }
 
+/** 목업 PNG가 캔버스에 들어갈 때의 배율 (앞·뒤 통일 스케일에 사용) */
+export function photoFitScale(
+  canvasW: number,
+  canvasH: number,
+  photo: { width: number; height: number },
+  scaleFactor: number,
+): number {
+  return (
+    Math.min(
+      (canvasW * 0.5) / photo.width,
+      (canvasH * 0.68) / photo.height,
+    ) * scaleFactor
+  );
+}
+
 export function computeMockupPlacement(
   canvasW: number,
   canvasH: number,
@@ -192,22 +207,44 @@ export function computeMockupPlacement(
   side: ViewSide,
   offset: { x: number; y: number } = { x: 0, y: 0 },
   photoOverride: PhotoMockup | null = null,
+  /** DB 상품 목업: 앞·뒤 픽셀 크기가 다를 때 같은 배율·프레임 안에 맞춤 */
+  uniformPhotos: PhotoMockup[] | null = null,
 ): MockupPlacement {
   const photo =
     photoOverride ?? getPhotoMockup(options.productType, side);
   const scaleFactor = sizeScale(options.size);
 
   if (photo) {
-    const scale =
-      Math.min(
-        (canvasW * 0.5) / photo.width,
-        (canvasH * 0.68) / photo.height,
-      ) * scaleFactor;
+    const useUniform =
+      photoOverride &&
+      uniformPhotos &&
+      uniformPhotos.length > 1;
+
+    let scale = photoFitScale(canvasW, canvasH, photo, scaleFactor);
+    if (useUniform) {
+      scale = Math.min(
+        ...uniformPhotos.map((p) =>
+          photoFitScale(canvasW, canvasH, p, scaleFactor),
+        ),
+      );
+    }
 
     const imgWidth = photo.width * scale;
     const imgHeight = photo.height * scale;
-    const imgLeft = (canvasW - imgWidth) / 2 + offset.x;
-    const imgTop = (canvasH - imgHeight) / 2 + offset.y;
+
+    let imgLeft: number;
+    let imgTop: number;
+    if (useUniform) {
+      const maxW = Math.max(...uniformPhotos.map((p) => p.width * scale));
+      const maxH = Math.max(...uniformPhotos.map((p) => p.height * scale));
+      const boxLeft = (canvasW - maxW) / 2 + offset.x;
+      const boxTop = (canvasH - maxH) / 2 + offset.y;
+      imgLeft = boxLeft + (maxW - imgWidth) / 2;
+      imgTop = boxTop + (maxH - imgHeight) / 2;
+    } else {
+      imgLeft = (canvasW - imgWidth) / 2 + offset.x;
+      imgTop = (canvasH - imgHeight) / 2 + offset.y;
+    }
 
     const rawPrint = {
       left: Math.round(imgLeft + photo.print.x * imgWidth),

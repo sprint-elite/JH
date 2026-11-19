@@ -8,6 +8,8 @@ export type HomeReviewSlide = {
   user: string;
   date: string;
   product: string;
+  productSlug?: string;
+  productThumbnailUrl?: string | null;
   productType: ProductType;
   productColor: string;
   rating: number;

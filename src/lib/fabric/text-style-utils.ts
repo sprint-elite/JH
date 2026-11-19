@@ -16,7 +16,14 @@ type TextLike = FabricObject & {
 
 export function isTextObject(obj: FabricObject): boolean {
   const t = obj.type ?? "";
-  return t === "i-text" || t === "text" || t === "textbox";
+  return (
+    t === "i-text" ||
+    t === "text" ||
+    t === "textbox" ||
+    t === "IText" ||
+    t === "Text" ||
+    t === "Textbox"
+  );
 }
 
 export function normalizeFontFamily(fontFamily?: string): string {
@@ -63,4 +70,18 @@ export function applyTextStylePatch(
   if (patch.fontWeight) next.fontWeight = patch.fontWeight;
   if (patch.fontStyle) next.fontStyle = patch.fontStyle;
   obj.set(next);
+}
+
+/** scaleX/scaleY를 fontSize에 반영하고 1:1로 — 납작·늘어짐 방지 */
+export function bakeTextObjectScale(obj: TextLike): void {
+  const sx = obj.scaleX ?? 1;
+  const sy = obj.scaleY ?? 1;
+  if (Math.abs(sx - 1) < 0.001 && Math.abs(sy - 1) < 0.001) return;
+  const size = obj.fontSize ?? 28;
+  const scale = Math.sqrt(sx * sy);
+  obj.set({
+    fontSize: size * scale,
+    scaleX: 1,
+    scaleY: 1,
+  });
 }

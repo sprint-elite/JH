@@ -8,9 +8,10 @@ import { getDesignViewSides, resolveSideLabel } from "@/types/builder";
 
 interface CanvasViewToggleProps {
   canvasRef: React.RefObject<DesignCanvasRef | null>;
+  shiftLeft?: boolean;
 }
 
-export function CanvasViewToggle({ canvasRef }: CanvasViewToggleProps) {
+export function CanvasViewToggle({ canvasRef, shiftLeft }: CanvasViewToggleProps) {
   const currentSide = useBuilderStore((s) => s.currentSide);
   const productType = useBuilderStore((s) => s.options.productType);
   const printSide = useBuilderStore((s) => s.options.printSide);
@@ -35,7 +36,11 @@ export function CanvasViewToggle({ canvasRef }: CanvasViewToggleProps) {
   if (viewSides.length <= 1) return null;
 
   return (
-    <div className="pointer-events-none absolute right-4 top-4 z-50 flex items-center gap-2">
+    <div
+      className={`pointer-events-none absolute top-4 z-20 flex items-center gap-2 ${
+        shiftLeft ? "left-4 right-auto" : "right-4"
+      }`}
+    >
       <div className="pointer-events-auto flex max-w-[min(100vw-2rem,28rem)] flex-wrap justify-end rounded-full bg-white p-1 shadow-lg ring-1 ring-zinc-200">
         {viewSides.map((side) => {
           const active = currentSide === side;

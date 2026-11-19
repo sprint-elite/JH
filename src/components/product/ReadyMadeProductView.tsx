@@ -80,7 +80,11 @@ export function ReadyMadeProductView({ product }: ReadyMadeProductViewProps) {
     product.stockQuantity > 0 &&
     quantity > product.stockQuantity;
 
-  const imageSrc = PRODUCT_DISPLAY_IMAGES[product.productType] ?? null;
+  const imageSrc =
+    product.images[0]?.url ??
+    product.thumbnailUrl ??
+    PRODUCT_DISPLAY_IMAGES[product.productType] ??
+    null;
   const noticeText = product.noticeItems
     .map((n) => (n.label ? `${n.label}: ${n.value}` : n.value))
     .filter(Boolean)

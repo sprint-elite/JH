@@ -1,12 +1,14 @@
+"use client";
+
+import Image from "next/image";
 import Link from "next/link";
-import { ShoppingBag } from "lucide-react";
 import { SHOW_HOME_REVIEWS_SECTION } from "@/lib/home-data";
 import { PRODUCT_PAGE_CONTAINER } from "@/lib/product-layout";
-import { SITE_INFO } from "@/lib/site-info";
+import { useSiteSettings } from "@/hooks/useSiteSettings";
 
-/** 클라이언트/서버 공용 — 운영 값은 관리자 사이트설정(DB)과 site-info 상수 중 사용처에 맞게 */
+/** 관리자 사이트설정(DB)을 표시. 불러오기 전에는 site-info 상수로 먼저 그림 */
 export function HomeFooter({ wide = false }: { wide?: boolean }) {
-  const info = SITE_INFO;
+  const info = useSiteSettings();
 
   return (
     <footer className="border-t border-zinc-200 bg-zinc-50">
@@ -17,10 +19,15 @@ export function HomeFooter({ wide = false }: { wide?: boolean }) {
           <div className="lg:col-span-2">
             <Link
               href="/"
-              className="inline-flex items-center gap-2 text-xl font-black text-zinc-900"
+              className="inline-flex items-center text-xl font-black text-zinc-900"
             >
-              <ShoppingBag className="h-5 w-5" />
-              {info.brandName}
+              <Image
+                src="/logo3.png"
+                alt={info.brandName}
+                width={991}
+                height={252}
+                className="h-7 w-auto"
+              />
             </Link>
             <p className="mt-3 max-w-sm text-sm leading-relaxed text-zinc-500">
               반팔티·카라티·후드까지, 로고 나염 단체티를 1장부터 제작합니다.
@@ -73,6 +80,11 @@ export function HomeFooter({ wide = false }: { wide?: boolean }) {
                   1:1 문의
                 </Link>
               </li>
+              <li>
+                <Link href="/orders" className="hover:text-zinc-900">
+                  비회원 주문조회
+                </Link>
+              </li>
             </ul>
           </div>
 
@@ -104,9 +116,11 @@ export function HomeFooter({ wide = false }: { wide?: boolean }) {
           <p>
             고객센터: {info.phone} · {info.email} · {info.hours}
           </p>
-          <p>
-            무통장: {info.bankAccount} ({info.bankHolder})
-          </p>
+          {info.bankAccount?.trim() ? (
+            <p>
+              무통장: {info.bankAccount} ({info.bankHolder})
+            </p>
+          ) : null}
           <p className="pt-2">
             © {new Date().getFullYear()} {info.brandName}
           </p>

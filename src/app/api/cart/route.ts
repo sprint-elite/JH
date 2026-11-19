@@ -3,6 +3,7 @@ import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { handleApiError, jsonError } from "@/lib/api-utils";
 import { fetchCartForUser } from "@/lib/cart";
+import { assertStockAvailable } from "@/lib/inventory";
 
 export async function GET() {
   try {
@@ -48,6 +49,12 @@ export async function POST(request: Request) {
     if (nextQty < product.minQuantity) {
       return jsonError(`최소 주문 수량은 ${product.minQuantity}개입니다.`, 400);
     }
+    const stockErr = assertStockAvailable(
+      product.stockQuantity,
+      nextQty,
+      product.name,
+    );
+    if (stockErr) return jsonError(stockErr, 400);
 
     await prisma.cartItem.upsert({
       where: {

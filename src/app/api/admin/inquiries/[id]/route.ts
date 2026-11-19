@@ -3,6 +3,7 @@ import { requireAdmin } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { handleApiError } from "@/lib/api-utils";
 import { notify } from "@/lib/notify";
+import { brandedMailSubject } from "@/lib/site-settings";
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -36,7 +37,7 @@ export async function PATCH(request: Request, context: Ctx) {
       void notify({
         type: "INQUIRY",
         toEmail: inquiry.email,
-        subject: `[JH MAKER] 문의 답변: ${inquiry.subject}`,
+        subject: await brandedMailSubject(`문의 답변: ${inquiry.subject}`),
         body: inquiry.adminReply,
         meta: { inquiryId: inquiry.id },
       });

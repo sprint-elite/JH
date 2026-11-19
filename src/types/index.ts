@@ -1,4 +1,5 @@
 import type { SavedBuilderPayload } from "./saved-design";
+import type { ProductMockupFaceDto } from "@/lib/product-mockup";
 import type { ProductSaleType } from "@/lib/product-sale-type";
 import type { PaymentStatus } from "@/lib/payment-status";
 
@@ -92,6 +93,8 @@ export interface OrderDetail extends Order {
     previewUrl: string | null;
     builderJson: SavedBuilderPayload;
   } | null;
+  /** 주문 상품 빌더 목업 — admin 미리보기용 */
+  productMockupFaces?: ProductMockupFaceDto[];
 }
 
 export interface OrderComment {

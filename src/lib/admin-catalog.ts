@@ -121,6 +121,7 @@ export async function fetchStorefrontCategories() {
     select: {
       slug: true,
       name: true,
+      parent: { select: { slug: true } },
       _count: {
         select: {
           products: { where: { isActive: true } },

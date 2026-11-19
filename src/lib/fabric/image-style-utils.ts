@@ -2,7 +2,8 @@ import type { FabricObject } from "fabric";
 import type { ImageStyleState } from "@/types/image-style";
 
 export function isImageObject(obj: FabricObject): boolean {
-  return obj.type === "image";
+  const t = obj.type ?? "";
+  return t === "image" || t === "Image";
 }
 
 export function readImageStyle(obj: FabricObject): ImageStyleState {

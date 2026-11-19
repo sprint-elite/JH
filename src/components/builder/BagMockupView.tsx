@@ -57,6 +57,7 @@ export function BagMockupView({
         width: placement.imgWidth,
         height: placement.imgHeight,
         isolation: "isolate",
+        filter: "drop-shadow(0 10px 22px rgba(24,24,27,0.22))",
       }}
     >
       {useSplitLayers ? (
@@ -65,7 +66,7 @@ export function BagMockupView({
             src={bodyMaskSrc!}
             alt=""
             draggable={false}
-            className="pointer-events-none block h-full w-full select-none object-fill"
+            className="pointer-events-none block h-full w-full select-none object-contain"
           />
           <PhotoAlphaTintLayer preset={bodyPreset} mockupSrc={bodyMaskSrc!} />
           <img
@@ -82,7 +83,7 @@ export function BagMockupView({
             src={mockupSrc}
             alt=""
             draggable={false}
-            className="pointer-events-none block h-full w-full select-none object-fill"
+            className="pointer-events-none block h-full w-full select-none object-contain"
           />
           <PhotoAlphaTintLayer preset={bodyPreset} mockupSrc={mockupSrc} />
         </>

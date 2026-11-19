@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import { restoreStock } from "@/lib/inventory";
 import { reversePointsForOrder } from "@/lib/points";
 import { notify } from "@/lib/notify";
+import { brandedMailSubject } from "@/lib/site-settings";
 
 type OrderForRefund = {
   id: string;
@@ -45,9 +46,13 @@ export async function applyInternalRefund(orderId: string): Promise<{
     throw new Error("결제 완료 주문만 환불할 수 있습니다.");
   }
 
+  const alreadyRestored = order.status === "CANCELLED";
+
   await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-    for (const item of order.items) {
-      await restoreStock(item.productId, item.quantity, tx);
+    if (!alreadyRestored) {
+      for (const item of order.items) {
+        await restoreStock(item.productId, item.quantity, tx);
+      }
     }
     await tx.payment.create({
       data: {
@@ -77,7 +82,7 @@ export async function applyInternalRefund(orderId: string): Promise<{
   void notify({
     type: "ORDER_CANCELLED",
     toEmail: order.user.email,
-    subject: `[JH MAKER] 환불 처리 ${order.orderNumber}`,
+    subject: await brandedMailSubject(`환불 처리 ${order.orderNumber}`),
     body: `주문 ${order.orderNumber} 환불이 처리되었습니다.`,
     meta: { orderId: order.id },
   });

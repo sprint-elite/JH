@@ -8,6 +8,10 @@ import type {
 import { prisma } from "@/lib/db";
 import { parseBuilderPayload } from "@/lib/saved-design";
 import type { Order, OrderDetail } from "@/types";
+import {
+  fetchProductMockupFaces,
+  type ProductMockupFaceDto,
+} from "@/lib/product-mockup";
 
 export type OrderWithRelations = PrismaOrder & {
   user: Pick<User, "id" | "name" | "email">;
@@ -115,6 +119,7 @@ export async function fetchOrdersForUser(userId: string): Promise<Order[]> {
 
 export function toOrderDetailDto(
   order: NonNullable<Awaited<ReturnType<typeof fetchOrderRecord>>>,
+  productMockupFaces: ProductMockupFaceDto[] = [],
 ): OrderDetail {
   const base = toOrderDto(order);
   const payload = order.design
@@ -141,6 +146,7 @@ export function toOrderDetailDto(
             builderJson: payload,
           }
         : null,
+    productMockupFaces,
   };
 }
 
@@ -156,5 +162,6 @@ export async function fetchOrderDetailById(
 ): Promise<OrderDetail | null> {
   const order = await fetchOrderRecord(id);
   if (!order) return null;
-  return toOrderDetailDto(order);
+  const productMockupFaces = await fetchProductMockupFaces(order.productId);
+  return toOrderDetailDto(order, productMockupFaces);
 }

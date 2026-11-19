@@ -27,6 +27,7 @@ export default async function TemplatesPage() {
       shortDesc: true,
       basePrice: true,
       builderType: true,
+      thumbnailUrl: true,
     },
   });
 
@@ -61,6 +62,7 @@ export default async function TemplatesPage() {
           shortDesc: p.shortDesc,
           basePrice: p.basePrice,
           productType: resolveProductType(p.builderType, p.slug),
+          thumbnailUrl: p.thumbnailUrl,
           caption: item.caption,
         };
       })

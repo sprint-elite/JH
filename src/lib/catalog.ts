@@ -27,11 +27,13 @@ export type CatalogProductDto = {
   productType: ProductType;
   saleType: ProductSaleType;
   categorySlug: string | null;
+  categoryParentSlug: string | null;
   bulkLabel: string | null;
   badge: string | null;
   colors: string[];
   sizeRange: string | null;
   groupPrice: number | null;
+  stockQuantity: number | null;
 };
 
 export type HomeBannerDto = {
@@ -53,6 +55,8 @@ export type HomeTemplateDto = {
   productName: string;
   priceFrom: number;
   productType: ProductType;
+  /** 기성품은 상품 상세, 커스텀은 빌더 */
+  href: string;
 };
 
 export type HomeReviewDto = {
@@ -60,6 +64,8 @@ export type HomeReviewDto = {
   user: string;
   date: string;
   product: string;
+  productSlug: string;
+  productThumbnailUrl: string | null;
   productType: ProductType;
   productColor: string;
   rating: number;
@@ -154,6 +160,7 @@ export function toCatalogProduct(
       unitPrice?: number | null;
       discountRate?: number | null;
     }[];
+    stockQuantity?: number | null;
   },
   badge?: string | null,
 ): CatalogProductDto {
@@ -190,16 +197,18 @@ export function toCatalogProduct(
     productType: resolveProductType(p.builderType, p.slug),
     saleType: p.saleType ?? "CUSTOM",
     categorySlug: p.category?.slug ?? null,
+    categoryParentSlug: p.category?.parent?.slug ?? null,
     bulkLabel: bulk,
     badge: badge ?? (p.isNew ? "NEW" : p.isFeatured ? "BEST" : null),
     colors,
     sizeRange,
     groupPrice,
+    stockQuantity: p.stockQuantity ?? null,
   };
 }
 
 const productInclude = {
-  category: { select: { slug: true } },
+  category: { select: { slug: true, parent: { select: { slug: true } } } },
   quantityDiscounts: {
     orderBy: { minQuantity: "asc" as const },
     take: 1,
@@ -274,7 +283,17 @@ export async function fetchProductList(options?: {
     where: {
       isActive: true,
       ...(options?.categorySlug
-        ? { category: { slug: options.categorySlug, isActive: true } }
+        ? {
+            OR: [
+              { category: { slug: options.categorySlug, isActive: true } },
+              {
+                category: {
+                  isActive: true,
+                  parent: { is: { slug: options.categorySlug, isActive: true } },
+                },
+              },
+            ],
+          }
         : {}),
     },
     orderBy: productListOrderBy(sort),
@@ -319,6 +338,9 @@ export async function fetchHomeCatalog(): Promise<HomeCatalogDto> {
             name: true,
             basePrice: true,
             builderType: true,
+            saleType: true,
+            isActive: true,
+            thumbnailUrl: true,
           },
         },
       },
@@ -335,6 +357,7 @@ export async function fetchHomeCatalog(): Promise<HomeCatalogDto> {
             name: true,
             slug: true,
             builderType: true,
+            thumbnailUrl: true,
             category: { select: { name: true } },
           },
         },
@@ -359,23 +382,31 @@ export async function fetchHomeCatalog(): Promise<HomeCatalogDto> {
   const guides: HomeContentCardDto[] = guideCards;
 
   const templates: HomeTemplateDto[] = templateRows
-    .filter((t) => t.product)
-    .map((t) => ({
-      id: t.id,
-      title: t.title,
-      description: t.description,
-      thumbnailUrl: t.thumbnailUrl,
-      productSlug: t.product.slug,
-      productName: t.product.name,
-      priceFrom: t.product.basePrice,
-      productType: resolveProductType(t.product.builderType, t.product.slug),
-    }));
+    .filter((t) => t.product && t.product.isActive)
+    .slice(0, 3)
+    .map((t) => {
+      const isReadyMade = t.product.saleType === "READYMADE";
+      return {
+        id: t.id,
+        title: t.title,
+        description: t.description,
+        thumbnailUrl: t.thumbnailUrl ?? t.product.thumbnailUrl,
+        productSlug: t.product.slug,
+        productName: t.product.name,
+        priceFrom: t.product.basePrice,
+        productType: resolveProductType(t.product.builderType, t.product.slug),
+        href: isReadyMade
+          ? `/products/${t.product.slug}`
+          : `/builder?product=${encodeURIComponent(t.product.slug)}`,
+      };
+    });
 
   const reviews: HomeReviewDto[] = reviewRows.map((r) => {
     const productType = resolveProductType(
       r.product.builderType,
       r.product.slug,
     );
+    const isToms = r.product.slug.startsWith("toms-");
     return {
       id: r.id,
       user: maskUserName(r.user.name),
@@ -385,8 +416,12 @@ export async function fetchHomeCatalog(): Promise<HomeCatalogDto> {
         day: "2-digit",
       }),
       product: r.product.name,
+      productSlug: r.product.slug,
+      productThumbnailUrl: r.product.thumbnailUrl,
       productType,
-      productColor: REVIEW_PRODUCT_COLORS[productType] ?? "mint",
+      productColor: isToms
+        ? "zinc"
+        : (REVIEW_PRODUCT_COLORS[productType] ?? "mint"),
       rating: r.rating,
       text: r.content,
       hot: r.isHot,
@@ -399,9 +434,18 @@ export async function fetchHomeCatalog(): Promise<HomeCatalogDto> {
     ? best
     : await fallbackProducts({ isFeatured: true });
 
+  const circleProducts = circleRows.length
+    ? []
+    : await prisma.product.findMany({
+        where: { isActive: true, saleType: "READYMADE" },
+        orderBy: [{ isFeatured: "desc" }, { sortOrder: "asc" }, { createdAt: "asc" }],
+        take: 8,
+        include: productInclude,
+      });
+
   const circleNav: HomeBannerDto[] = circleRows.length
     ? circleRows.map(toBannerDto)
-    : bestResolved.slice(0, 8).map((p) => ({
+    : circleProducts.map(toCatalogProduct).map((p) => ({
         id: p.id,
         tag: null,
         title: p.name,
@@ -473,6 +517,8 @@ export type ProductDetailDto = {
   categorySlug: string | null;
   productType: ProductType;
   saleType: ProductSaleType;
+  thumbnailUrl: string | null;
+  images: Array<{ url: string; alt: string | null }>;
   bulkLabel: string | null;
   optionSchema: ReturnType<typeof parseProductOptionSchema>;
   mockupFaces: ProductMockupFaceDto[];
@@ -494,6 +540,7 @@ export async function fetchProductDetailBySlug(
     where: { slug, isActive: true },
     include: {
       category: { select: { name: true, slug: true } },
+      images: { orderBy: [{ isPrimary: "desc" }, { sortOrder: "asc" }] },
       quantityDiscounts: { orderBy: { minQuantity: "asc" } },
       detailSections: {
         where: { isActive: true },
@@ -546,6 +593,8 @@ export async function fetchProductDetailBySlug(
     categorySlug: product.category?.slug ?? null,
     productType: resolveProductType(product.builderType, product.slug),
     saleType: product.saleType,
+    thumbnailUrl: product.thumbnailUrl,
+    images: product.images.map((img) => ({ url: img.url, alt: img.alt })),
     bulkLabel,
     optionSchema: parseProductOptionSchema(product.optionSchema),
     mockupFaces,

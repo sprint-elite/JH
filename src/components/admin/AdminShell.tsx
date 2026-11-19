@@ -10,6 +10,7 @@ import {
   FileText,
   FolderTree,
   Image as ImageIcon,
+  Megaphone,
   LayoutDashboard,
   Layers,
   LogOut,
@@ -72,6 +73,7 @@ const navGroups: NavGroup[] = [
     label: "마케팅",
     items: [
       { href: "/admin/banners", label: "배너", icon: ImageIcon, exact: false },
+      { href: "/admin/popups", label: "팝업", icon: Megaphone, exact: false },
       { href: "/admin/content", label: "소개글", icon: FileText, exact: false },
       { href: "/admin/coupons", label: "쿠폰", icon: Percent, exact: false },
     ],

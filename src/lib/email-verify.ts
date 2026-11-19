@@ -2,6 +2,7 @@ import { createHash, randomBytes } from "crypto";
 import { prisma } from "@/lib/db";
 import { getSiteUrl } from "@/lib/site-url";
 import { notify } from "@/lib/notify";
+import { brandedMailSubject } from "@/lib/site-settings";
 
 const TTL_MS = 24 * 60 * 60 * 1000;
 
@@ -29,7 +30,7 @@ export async function issueEmailVerification(userId: string, email: string) {
   void notify({
     type: "PASSWORD_RESET",
     toEmail: email,
-    subject: "[JH MAKER] 이메일 인증",
+    subject: await brandedMailSubject("이메일 인증"),
     body: verifyUrl,
   });
 

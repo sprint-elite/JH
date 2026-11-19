@@ -70,7 +70,7 @@ export function ProductListPage({
 
   return (
     <div className="min-h-screen bg-white">
-      <HomeHeader wide />
+      <HomeHeader />
 
       <div className={`${PRODUCT_PAGE_CONTAINER} py-6 sm:py-8`}>
         <div className="flex gap-8 lg:gap-10">

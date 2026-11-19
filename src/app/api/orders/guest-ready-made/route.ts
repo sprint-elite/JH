@@ -8,7 +8,6 @@ import {
   normalizeShippingInput,
   validateShippingInput,
 } from "@/lib/order-shipping";
-import { createSessionToken, sessionCookieOptions } from "@/lib/session";
 import { getSiteSettings } from "@/lib/site-settings";
 import {
   normalizeEmail,
@@ -21,6 +20,7 @@ import {
   decrementStock,
 } from "@/lib/inventory";
 import { assertApiRateLimit } from "@/lib/rate-limit";
+import { attachGuestSession, resolveGuestUser } from "@/lib/guest-user";
 
 /** 비회원 기성품 주문 — 게스트 계정 생성 후 체크아웃으로 */
 export async function POST(request: Request) {
@@ -52,11 +52,6 @@ export async function POST(request: Request) {
 
     const productSlug = body.productSlug?.trim();
     if (!productSlug) return jsonError("상품을 선택해 주세요.", 400);
-
-    const existingUser = await prisma.user.findUnique({ where: { email } });
-    if (existingUser && !existingUser.isGuest && !existingUser.deletedAt) {
-      return jsonError("이미 가입된 이메일입니다. 로그인 후 주문해 주세요.", 409);
-    }
 
     const product = await prisma.product.findFirst({
       where: { slug: productSlug, isActive: true },
@@ -93,28 +88,11 @@ export async function POST(request: Request) {
         ? 0
         : Math.max(0, baseShip);
 
-    const user =
-      existingUser ??
-      (await prisma.user.create({
-        data: {
-          email,
-          name: (body.shippingName ?? "게스트").trim(),
-          phone: body.shippingPhone?.trim() || null,
-          passwordHash: null,
-          isGuest: true,
-          role: "CUSTOMER",
-        },
-      }));
-
-    if (existingUser?.isGuest) {
-      await prisma.user.update({
-        where: { id: user.id },
-        data: {
-          name: (body.shippingName ?? user.name).trim(),
-          phone: body.shippingPhone?.trim() || user.phone,
-        },
-      });
-    }
+    const user = await resolveGuestUser({
+      email,
+      name: body.shippingName ?? "게스트",
+      phone: body.shippingPhone,
+    });
 
     const order = await prisma.$transaction(async (tx) => {
       await decrementStock(product.id, quantity, tx);
@@ -155,19 +133,16 @@ export async function POST(request: Request) {
       });
     });
 
-    const session = await createSessionToken({
-      userId: user.id,
-      email: user.email,
-      name: user.name,
-      role: user.role,
-    });
-
     const response = NextResponse.json(
       { order: toOrderDto(order), guest: true },
       { status: 201 },
     );
-    const cookie = sessionCookieOptions(session);
-    response.cookies.set(cookie.name, cookie.value, cookie);
+    await attachGuestSession(response, {
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      role: user.role,
+    });
     return response;
   } catch (err) {
     return handleApiError(err);
